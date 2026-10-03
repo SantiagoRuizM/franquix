@@ -10,6 +10,7 @@ import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.RenameProductUseCase;
 import com.franquix.franchises.domain.port.in.UpdateProductStockUseCase;
+import com.franquix.franchises.infrastructure.config.JacksonConfig;
 import com.franquix.franchises.infrastructure.entrypoint.rest.error.GlobalErrorHandler;
 import com.franquix.franchises.infrastructure.entrypoint.rest.handler.BranchHandler;
 import com.franquix.franchises.infrastructure.entrypoint.rest.handler.FranchiseHandler;
@@ -38,6 +39,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
         ProductHandler.class,
         RequestValidator.class,
         GlobalErrorHandler.class,
+        JacksonConfig.class,
         RestTestSupport.FixedClock.class
 })
 public abstract class RestTestSupport {
