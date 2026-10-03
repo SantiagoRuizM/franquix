@@ -16,6 +16,24 @@ server:
   port: ${PORT:8080}
   shutdown: graceful
 
+franquix:
+  security:
+    jwt:
+      # HS256 signing key, at least 32 bytes. No default: the app refuses to start without it.
+      secret: ${JWT_SECRET}
+      issuer: franquix
+      access-token-ttl: ${ACCESS_TOKEN_TTL:5m}
+    refresh-token-ttl: ${REFRESH_TOKEN_TTL:1d}
+    # First ADMIN, created at startup if it does not exist yet
+    bootstrap-admin:
+      email: ${ADMIN_EMAIL:}
+      name: ${ADMIN_NAME:Administrator}
+      password: ${ADMIN_PASSWORD:}
+    rate-limit:
+      auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:5}
+      anonymous-per-hour: ${RATE_LIMIT_ANONYMOUS_PER_HOUR:100}
+      user-per-hour: ${RATE_LIMIT_USER_PER_HOUR:1000}
+
 management:
   endpoints:
     web:
@@ -33,13 +51,15 @@ info:
   app:
     name: Franquix
     description: Franchiser as a Service - reactive franchise management API
-    version: 1.0.0
+    version: 1.1.0
 
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: ${API_DOCS_ENABLED:true}
   swagger-ui:
     path: /swagger-ui.html
+    enabled: ${API_DOCS_ENABLED:true}
 
 logging:
   level:
@@ -55,6 +75,15 @@ spring:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/franquix}
 
+# Development-only defaults so `./gradlew bootRun` works out of the box. Never used by the `prod` profile.
+franquix:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:local-development-only-secret-change-me-0123456789}
+    bootstrap-admin:
+      email: ${ADMIN_EMAIL:admin@franquix.local}
+      password: ${ADMIN_PASSWORD:change-me-local-only}
+
 logging:
   level:
     com.franquix: DEBUG
@@ -65,7 +94,7 @@ spring:
     activate:
       on-profile: prod
 
-# Behind the Cloudflare Worker: trust X-Forwarded-Proto/Host to build public URLs
+# Behind the Cloudflare Worker: trust X-Forwarded-Proto/Host/For to build public URLs and see client IPs
 server:
   forward-headers-strategy: framework
 
