@@ -15,9 +15,6 @@ import reactor.core.publisher.Mono;
  */
 public class GetTopStockProductsService implements GetTopStockProductsUseCase {
 
-    /** Caps the per-branch queries a single request runs at once, protecting the connection pool. */
-    private static final int BRANCH_LOOKUP_CONCURRENCY = 8;
-
     private final HierarchyResolver hierarchy;
     private final BranchRepositoryPort branches;
     private final ProductRepositoryPort products;
@@ -34,7 +31,7 @@ public class GetTopStockProductsService implements GetTopStockProductsUseCase {
         return hierarchy.requireFranchise(franchiseId)
                 .flatMapMany(franchise -> branches.findByFranchiseId(franchise.id()))
                 // concurrent lookups, results emitted in the branch (name) order
-                .flatMapSequential(this::topProductOf, BRANCH_LOOKUP_CONCURRENCY);
+                .flatMapSequential(this::topProductOf);
     }
 
     private Mono<BranchTopProduct> topProductOf(Branch branch) {
