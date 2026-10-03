@@ -5,6 +5,9 @@ name: Deploy
 #   CLOUDFLARE_API_TOKEN   - token with "Workers Scripts: Edit" and "Containers: Edit"
 #   CLOUDFLARE_ACCOUNT_ID  - Cloudflare account id
 #   MONGODB_URI            - Atlas connection string (terraform output -raw mongodb_uri)
+#   JWT_SECRET             - access token signing key, 32+ bytes (openssl rand -base64 48)
+#   ADMIN_EMAIL            - first admin account, created at startup if missing
+#   ADMIN_PASSWORD         - its password (12+ characters, not common)
 # Without CLOUDFLARE_API_TOKEN the deploy job is skipped, so forks and local-only setups stay green.
 
 on:
@@ -66,13 +69,13 @@ jobs:
         if: steps.credentials.outputs.configured == 'true'
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
           secrets_file="$RUNNER_TEMP/worker-secrets.json"
           trap 'rm -f "$secrets_file"' EXIT
-          if [ -n "$MONGODB_URI" ]; then
-            jq -n --arg uri "$MONGODB_URI" '{MONGODB_URI: $uri}' > "$secrets_file"
-            npx wrangler deploy --secrets-file "$secrets_file"
-          else
-            npx wrangler deploy
-          fi
+          # upload only the secrets that are set; the others keep their current value
+          jq -n 'env | {MONGODB_URI, JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD} | with_entries(select(.value != null and .value != ""))' > "$secrets_file"
+          npx wrangler deploy --secrets-file "$secrets_file"
 
