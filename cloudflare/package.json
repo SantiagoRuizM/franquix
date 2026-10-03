@@ -1,0 +1,21 @@
+{
+  "name": "franquix-edge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker + Durable Object that runs the Franquix API container",
+  "type": "module",
+  "scripts": {
+    "typegen": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "check": "wrangler deploy --dry-run --outdir dist",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "wrangler": "^4.147.0"
+  }
+}
