@@ -27,7 +27,7 @@ Franquix is a logistics backend that lets any brand run a franchise network:
 - Functional and reactive programming (WebFlux Router Functions + Handlers, `Mono`/`Flux` end to end).
 - Rename a franchise, a branch and a product.
 - Persistence provisioned with Terraform (Atlas M0 cluster, DB user, IP access list).
-- Whole solution deployed to the cloud (Cloudflare Containers: Worker + Durable Object → container).
+- Whole solution deployed to the cloud (the Docker image on Render, free plan).
 
 ## Stack
 
@@ -42,8 +42,9 @@ Franquix is a logistics backend that lets any brand run a franchise network:
 | Coverage | JaCoCo, build fails below 80 % |
 | Packaging | Docker multi-stage, docker-compose (app + MongoDB) |
 | IaC | Terraform (`mongodb/mongodbatlas` provider) |
-| Cloud runtime | Cloudflare Containers (Worker + Durable Object, `wrangler.jsonc`) |
-| CI/CD | GitHub Actions (build, tests, Terraform checks, `wrangler deploy`) |
+| Cloud runtime | Render web service from the Dockerfile (`render.yaml`) |
+| Security | One static bearer token (`API_TOKEN`) on every `/api` request |
+| CI/CD | GitHub Actions (build, tests, Terraform checks); Render deploys `main` once CI passes |
 
 ## Endpoints (prefix `/api/v1`)
 

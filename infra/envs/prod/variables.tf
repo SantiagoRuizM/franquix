@@ -23,7 +23,7 @@ variable "region" {
 
 variable "allowed_cidr_blocks" {
   description = <<-EOT
-    IP access list of the cluster. Cloudflare Containers have no static egress IP and the free
+    IP access list of the cluster. The free Render plan has no static egress IP and the free
     M0 tier supports neither VPC peering nor private endpoints, so the default opens the cluster
     to any address; access is still protected by TLS and the generated 32-character password.
     Narrow it (e.g. to your own IP) when the runtime has a known egress address.
@@ -35,7 +35,7 @@ variable "allowed_cidr_blocks" {
   default = [
     {
       cidr_block = "0.0.0.0/0"
-      comment    = "Cloudflare Containers: no static egress IP"
+      comment    = "Render free plan: no static egress IP"
     }
   ]
 }
