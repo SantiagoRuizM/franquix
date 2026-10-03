@@ -1,0 +1,100 @@
+### Franquix API - IntelliJ HTTP Client / VS Code REST Client
+### Run the requests top to bottom; ids are captured into variables (IntelliJ syntax).
+
+@host = http://localhost:8080
+@api = {{host}}/api/v1/franchises
+
+### 1. Create a franchise
+POST {{api}}
+Content-Type: application/json
+
+{ "name": "Acme Coffee" }
+
+> {% client.global.set("franchiseId", response.body.id); %}
+
+### 4. Add branch "Centro"
+POST {{api}}/{{franchiseId}}/branches
+Content-Type: application/json
+
+{ "name": "Centro" }
+
+> {% client.global.set("centroId", response.body.id); %}
+
+### 4. Add branch "Norte"
+POST {{api}}/{{franchiseId}}/branches
+Content-Type: application/json
+
+{ "name": "Norte" }
+
+> {% client.global.set("norteId", response.body.id); %}
+
+### 6. Add product to Centro
+POST {{api}}/{{franchiseId}}/branches/{{centroId}}/products
+Content-Type: application/json
+
+{ "name": "Coffee", "stock": 120 }
+
+> {% client.global.set("coffeeId", response.body.id); %}
+
+### 6. Add another product to Centro
+POST {{api}}/{{franchiseId}}/branches/{{centroId}}/products
+Content-Type: application/json
+
+{ "name": "Tea", "stock": 40 }
+
+### 6. Add product to Norte
+POST {{api}}/{{franchiseId}}/branches/{{norteId}}/products
+Content-Type: application/json
+
+{ "name": "Bagel", "stock": 85 }
+
+### 10. Top-stock product per branch
+GET {{api}}/{{franchiseId}}/branches/top-stock-products
+
+### 7. Update stock
+PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}/stock
+Content-Type: application/json
+
+{ "stock": 15 }
+
+### 8. Rename product
+PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}/name
+Content-Type: application/json
+
+{ "name": "Espresso" }
+
+### 5. Rename branch
+PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/name
+Content-Type: application/json
+
+{ "name": "Downtown" }
+
+### 3. Rename franchise
+PATCH {{api}}/{{franchiseId}}/name
+Content-Type: application/json
+
+{ "name": "Acme Coffee Global" }
+
+### 2. Whole tree
+GET {{api}}/{{franchiseId}}
+
+### 9. Delete product
+DELETE {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}
+
+### Errors: 409 duplicate franchise
+POST {{api}}
+Content-Type: application/json
+
+{ "name": "Acme Coffee Global" }
+
+### Errors: 400 validation
+POST {{api}}/{{franchiseId}}/branches/{{norteId}}/products
+Content-Type: application/json
+
+{ "name": " ", "stock": -1 }
+
+### Errors: 400 malformed id
+GET {{api}}/not-an-id
+
+### Health
+GET {{host}}/actuator/health
