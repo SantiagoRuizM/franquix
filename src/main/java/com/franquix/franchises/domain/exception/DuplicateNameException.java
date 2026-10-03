@@ -20,4 +20,8 @@ public final class DuplicateNameException extends BusinessException {
         return new DuplicateNameException(
                 "A product named '%s' already exists in this branch".formatted(name));
     }
+
+    public static DuplicateNameException email(String email) {
+        return new DuplicateNameException("A user with email '%s' already exists".formatted(email));
+    }
 }
