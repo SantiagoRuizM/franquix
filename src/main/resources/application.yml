@@ -65,6 +65,10 @@ spring:
     activate:
       on-profile: prod
 
+# Behind the Cloudflare Worker: trust X-Forwarded-Proto/Host to build public URLs
+server:
+  forward-headers-strategy: framework
+
 management:
   endpoint:
     health:
