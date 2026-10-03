@@ -1,1 +1,4 @@
 MONGODB_URI=mongodb://host.docker.internal:27017/franquix
+JWT_SECRET=local-development-only-secret-change-me-0123456789
+ADMIN_EMAIL=admin@franquix.local
+ADMIN_PASSWORD=change-me-local-only

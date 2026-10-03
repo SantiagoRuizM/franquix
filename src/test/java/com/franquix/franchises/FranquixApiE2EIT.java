@@ -3,31 +3,25 @@ package com.franquix.franchises;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.franquix.franchises.support.MongoTestcontainersConfiguration;
+import com.franquix.franchises.support.E2ESupport;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
 /**
- * Full application (HTTP server, use cases, MongoDB adapter and indexes) against MongoDB in Docker.
- * Each test creates its own franchise with a unique name, so tests stay independent.
+ * Franchise API end to end: HTTP server, security, use cases, MongoDB adapter and indexes. Each test
+ * creates its own franchise with a unique name, so tests stay independent.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-// generous timeout: the first requests of a cold JVM also open the MongoDB connection pool
-@AutoConfigureWebTestClient(timeout = "PT30S")
-@Import(MongoTestcontainersConfiguration.class)
-class FranquixApiE2EIT {
+class FranquixApiE2EIT extends E2ESupport {
 
     private static final String BASE = "/api/v1/franchises";
-
-    @Autowired
-    private WebTestClient client;
 
     private String createFranchise(String name) {
         return idOf(client.post().uri(BASE)
@@ -59,10 +53,6 @@ class FranquixApiE2EIT {
     private static String idOf(JsonNode body) {
         assertThat(body).isNotNull();
         return body.get("id").asText();
-    }
-
-    private static String unique(String prefix) {
-        return prefix + " " + System.nanoTime();
     }
 
     @Test
@@ -230,12 +220,33 @@ class FranquixApiE2EIT {
     }
 
     @Test
-    void healthAndOpenApiAreExposed() {
-        client.get().uri("/actuator/health")
+    void parallelCreatesOfTheSameNameHaveExactlyOneWinner(@LocalServerPort int port) {
+        String name = unique("Race");
+        String token = login(ADMIN_EMAIL, ADMIN_PASSWORD).get("accessToken").asText();
+        WebClient webClient = WebClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .build();
+
+        // ten truly concurrent requests, half of them differing only in letter case
+        List<Integer> statuses = Flux.range(0, 10)
+                .flatMap(i -> webClient.post().uri(BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("name", i % 2 == 0 ? name : name.toUpperCase()))
+                        .exchangeToMono(response -> response.releaseBody().thenReturn(response.statusCode().value())), 10)
+                .collectList()
+                .block(Duration.ofSeconds(30));
+
+        assertThat(statuses).containsOnly(201, 409).filteredOn(status -> status == 201).hasSize(1);
+    }
+
+    @Test
+    void healthAndOpenApiArePublic() {
+        http.get().uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody().jsonPath("$.status").isEqualTo("UP");
-        client.get().uri("/v3/api-docs")
+        http.get().uri("/v3/api-docs")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()

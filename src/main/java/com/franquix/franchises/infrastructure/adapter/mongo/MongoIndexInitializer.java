@@ -3,6 +3,8 @@ package com.franquix.franchises.infrastructure.adapter.mongo;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.ProductDocument;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.RefreshTokenDocument;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.UserDocument;
 import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
@@ -81,7 +83,19 @@ public class MongoIndexInitializer implements InitializingBean {
                         create(FranchiseDocument.COLLECTION, new Index()
                                 .on("name", Sort.Direction.ASC)
                                 .on("_id", Sort.Direction.ASC)
-                                .named("ix_franchise_name_id")))
+                                .named("ix_franchise_name_id")),
+                        create(UserDocument.COLLECTION, new Index()
+                                .on("email", Sort.Direction.ASC)
+                                .unique()
+                                .named("ux_user_email")),
+                        create(RefreshTokenDocument.COLLECTION, new Index()
+                                .on("expiresAt", Sort.Direction.ASC)
+                                .expire(Duration.ZERO)
+                                .named("ttl_refresh_token_expires_at")),
+                        create(RefreshTokenDocument.COLLECTION, new Index()
+                                .on("userId", Sort.Direction.ASC)
+                                .on("revokedAt", Sort.Direction.ASC)
+                                .named("ix_refresh_token_user")))
                 .doOnNext(name -> log.info("MongoDB index ready: {}", name))
                 .then();
     }

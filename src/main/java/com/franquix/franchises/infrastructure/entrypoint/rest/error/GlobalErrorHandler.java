@@ -1,27 +1,20 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.error;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.franquix.franchises.domain.exception.AuthenticationFailedException;
 import com.franquix.franchises.domain.exception.DomainValidationException;
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.exception.NotFoundException;
 import com.franquix.franchises.infrastructure.entrypoint.rest.validation.RequestValidationException;
-import java.net.URI;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.codec.HttpMessageWriter;
-import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.reactive.result.view.ViewResolver;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
@@ -32,8 +25,9 @@ import reactor.core.publisher.Mono;
  *
  * <ul>
  *   <li>400 - request validation, malformed body or id, domain invariant violations</li>
+ *   <li>401 - rejected credentials or refresh token (with {@code WWW-Authenticate})</li>
  *   <li>404 - unknown resource or route</li>
- *   <li>409 - duplicate name</li>
+ *   <li>409 - duplicate name or email</li>
  *   <li>other framework statuses (405, 415, ...) are passed through</li>
  *   <li>500 - anything else, without leaking internals; the cause is logged</li>
  * </ul>
@@ -46,12 +40,10 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalErrorHandler.class);
 
-    private final List<HttpMessageWriter<?>> messageWriters;
-    private final Clock clock;
+    private final ProblemDetailWriter writer;
 
-    public GlobalErrorHandler(ServerCodecConfigurer codecs, Clock clock) {
-        this.messageWriters = codecs.getWriters();
-        this.clock = clock;
+    public GlobalErrorHandler(ProblemDetailWriter writer) {
+        this.writer = writer;
     }
 
     @Override
@@ -60,14 +52,12 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
             return Mono.error(error);
         }
         ProblemDetail problem = toProblem(error);
-        problem.setInstance(URI.create(exchange.getRequest().getPath().value()));
-        problem.setProperty("timestamp", Instant.now(clock));
         log(exchange, problem, error);
-
-        return ServerResponse.status(problem.getStatus())
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .bodyValue(problem)
-                .flatMap(response -> response.writeTo(exchange, new ResponseContext()));
+        HttpHeaders headers = new HttpHeaders();
+        if (error instanceof AuthenticationFailedException) {
+            headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+        }
+        return writer.write(exchange, problem, headers);
     }
 
     private ProblemDetail toProblem(Throwable error) {
@@ -80,6 +70,8 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
                 yield problem;
             }
             case DomainValidationException e -> ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+            case AuthenticationFailedException e ->
+                    ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
             case NotFoundException e -> ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
             case DuplicateNameException e -> ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
             case ServerWebInputException e ->
@@ -112,19 +104,6 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
             log.error("status={} method={} path={} error={}", problem.getStatus(), method, path, error.toString(), error);
         } else {
             log.warn("status={} method={} path={} detail=\"{}\"", problem.getStatus(), method, path, problem.getDetail());
-        }
-    }
-
-    private final class ResponseContext implements ServerResponse.Context {
-
-        @Override
-        public List<HttpMessageWriter<?>> messageWriters() {
-            return messageWriters;
-        }
-
-        @Override
-        public List<ViewResolver> viewResolvers() {
-            return List.of();
         }
     }
 }
