@@ -1,0 +1,263 @@
+package com.franquix.franchises.infrastructure.adapter.mongo;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.franquix.franchises.domain.exception.DuplicateNameException;
+import com.franquix.franchises.domain.model.Branch;
+import com.franquix.franchises.domain.model.Franchise;
+import com.franquix.franchises.domain.model.Product;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocument;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.ProductDocument;
+import com.franquix.franchises.support.MongoTestcontainersConfiguration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.bson.Document;
+import org.bson.types.ObjectId;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
+@DataMongoTest
+@Import({
+        MongoTestcontainersConfiguration.class,
+        MongoIndexInitializer.class,
+        MongoFranchiseRepositoryAdapter.class,
+        MongoBranchRepositoryAdapter.class,
+        MongoProductRepositoryAdapter.class
+})
+class MongoRepositoryAdaptersIT {
+
+    // MongoDB stores milliseconds; truncate so round-tripped values compare equal
+    private static final Instant NOW = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    private static final String MISSING_ID = new ObjectId().toHexString();
+
+    @Autowired
+    private ReactiveMongoTemplate template;
+    @Autowired
+    private MongoFranchiseRepositoryAdapter franchises;
+    @Autowired
+    private MongoBranchRepositoryAdapter branches;
+    @Autowired
+    private MongoProductRepositoryAdapter products;
+
+    @BeforeEach
+    void cleanCollections() {
+        // remove documents but keep the indexes created at startup
+        Flux.just(FranchiseDocument.COLLECTION, BranchDocument.COLLECTION, ProductDocument.COLLECTION)
+                .concatMap(collection -> template.remove(new Query(), collection))
+                .blockLast();
+    }
+
+    private Franchise saveFranchise(String name) {
+        return franchises.save(Franchise.create(name, NOW)).block();
+    }
+
+    private Branch saveBranch(String franchiseId, String name) {
+        return branches.save(Branch.create(franchiseId, name, NOW)).block();
+    }
+
+    private Product saveProduct(String branchId, String name, int stock) {
+        return products.save(Product.create(branchId, name, stock, NOW)).block();
+    }
+
+    @Test
+    void createsTheUniqueAndTopStockIndexes() {
+        StepVerifier.create(template.indexOps(ProductDocument.COLLECTION).getIndexInfo()
+                        .map(info -> info.getName())
+                        .collectList())
+                .assertNext(names -> assertThat(names)
+                        .contains("ux_product_branch_name", "ix_product_branch_top_stock"))
+                .verifyComplete();
+    }
+
+    @Nested
+    class Franchises {
+
+        @Test
+        void saveAssignsAnObjectIdAndFindByIdReadsItBack() {
+            Franchise saved = saveFranchise("Acme");
+
+            assertThat(ObjectId.isValid(saved.id())).isTrue();
+            StepVerifier.create(franchises.findById(saved.id()))
+                    .expectNext(saved)
+                    .verifyComplete();
+        }
+
+        @Test
+        void saveUpdatesAnExistingFranchise() {
+            Franchise saved = saveFranchise("Acme");
+
+            StepVerifier.create(franchises.save(saved.rename("Acme Global", NOW))
+                            .then(franchises.findById(saved.id())))
+                    .assertNext(found -> assertThat(found.name()).isEqualTo("Acme Global"))
+                    .verifyComplete();
+        }
+
+        @Test
+        void rejectsADuplicateName() {
+            saveFranchise("Acme");
+
+            StepVerifier.create(franchises.save(Franchise.create("Acme", NOW)))
+                    .expectErrorMessage("A franchise named 'Acme' already exists")
+                    .verify();
+        }
+
+        @Test
+        void renamingToTheCurrentNameIsNotADuplicate() {
+            Franchise saved = saveFranchise("Acme");
+
+            StepVerifier.create(franchises.save(saved.rename("Acme", NOW)))
+                    .expectNextCount(1)
+                    .verifyComplete();
+        }
+
+        @Test
+        void findByIdIsEmptyForUnknownOrMalformedIds() {
+            StepVerifier.create(franchises.findById(MISSING_ID)).verifyComplete();
+            StepVerifier.create(franchises.findById("not-an-object-id")).verifyComplete();
+        }
+    }
+
+    @Nested
+    class Branches {
+
+        @Test
+        void storesTheFranchiseReferenceAsAnObjectId() {
+            Franchise franchise = saveFranchise("Acme");
+            Branch branch = saveBranch(franchise.id(), "Downtown");
+
+            StepVerifier.create(template.findById(new ObjectId(branch.id()), Document.class, BranchDocument.COLLECTION))
+                    .assertNext(raw -> assertThat(raw.get("franchiseId")).isEqualTo(new ObjectId(franchise.id())))
+                    .verifyComplete();
+        }
+
+        @Test
+        void findByIdAndFranchiseIdEnforcesOwnership() {
+            Franchise acme = saveFranchise("Acme");
+            Franchise other = saveFranchise("Other");
+            Branch branch = saveBranch(acme.id(), "Downtown");
+
+            StepVerifier.create(branches.findByIdAndFranchiseId(branch.id(), acme.id()))
+                    .expectNext(branch)
+                    .verifyComplete();
+            StepVerifier.create(branches.findByIdAndFranchiseId(branch.id(), other.id())).verifyComplete();
+            StepVerifier.create(branches.findByIdAndFranchiseId("bad", acme.id())).verifyComplete();
+        }
+
+        @Test
+        void findByFranchiseIdReturnsBranchesSortedByName() {
+            Franchise franchise = saveFranchise("Acme");
+            saveBranch(franchise.id(), "Uptown");
+            saveBranch(franchise.id(), "Airport");
+            saveBranch(saveFranchise("Other").id(), "Elsewhere");
+
+            StepVerifier.create(branches.findByFranchiseId(franchise.id()).map(Branch::name))
+                    .expectNext("Airport", "Uptown")
+                    .verifyComplete();
+            StepVerifier.create(branches.findByFranchiseId("bad")).verifyComplete();
+        }
+
+        @Test
+        void branchNamesAreUniquePerFranchiseOnly() {
+            Franchise acme = saveFranchise("Acme");
+            Franchise other = saveFranchise("Other");
+            saveBranch(acme.id(), "Downtown");
+
+            StepVerifier.create(branches.save(Branch.create(other.id(), "Downtown", NOW)))
+                    .expectNextCount(1)
+                    .verifyComplete();
+            StepVerifier.create(branches.save(Branch.create(acme.id(), "Downtown", NOW)))
+                    .expectError(DuplicateNameException.class)
+                    .verify();
+        }
+    }
+
+    @Nested
+    class Products {
+
+        private Branch branch;
+
+        @BeforeEach
+        void setUp() {
+            branch = saveBranch(saveFranchise("Acme").id(), "Downtown");
+        }
+
+        @Test
+        void findByIdAndBranchIdEnforcesOwnership() {
+            Branch otherBranch = saveBranch(branch.franchiseId(), "Uptown");
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+
+            StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id()))
+                    .expectNext(coffee)
+                    .verifyComplete();
+            StepVerifier.create(products.findByIdAndBranchId(coffee.id(), otherBranch.id())).verifyComplete();
+            StepVerifier.create(products.findByIdAndBranchId("bad", branch.id())).verifyComplete();
+        }
+
+        @Test
+        void findByBranchIdReturnsProductsSortedByName() {
+            saveProduct(branch.id(), "Tea", 1);
+            saveProduct(branch.id(), "Coffee", 2);
+
+            StepVerifier.create(products.findByBranchId(branch.id()).map(Product::name))
+                    .expectNext("Coffee", "Tea")
+                    .verifyComplete();
+            StepVerifier.create(products.findByBranchId("bad")).verifyComplete();
+        }
+
+        @Test
+        void findTopStockReturnsTheHighestStockAndBreaksTiesByName() {
+            saveProduct(branch.id(), "Tea", 50);
+            saveProduct(branch.id(), "Coffee", 80);
+            saveProduct(branch.id(), "Bagel", 80);
+            saveProduct(branch.id(), "Water", 3);
+
+            StepVerifier.create(products.findTopStockByBranchId(branch.id()))
+                    .assertNext(top -> assertThat(top.name()).isEqualTo("Bagel"))
+                    .verifyComplete();
+        }
+
+        @Test
+        void findTopStockIsEmptyForABranchWithoutProducts() {
+            StepVerifier.create(products.findTopStockByBranchId(branch.id())).verifyComplete();
+            StepVerifier.create(products.findTopStockByBranchId("bad")).verifyComplete();
+        }
+
+        @Test
+        void deleteByIdRemovesTheProduct() {
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+
+            StepVerifier.create(products.deleteById(coffee.id())
+                            .then(products.findByIdAndBranchId(coffee.id(), branch.id())))
+                    .verifyComplete();
+            StepVerifier.create(products.deleteById("bad")).verifyComplete();
+        }
+
+        @Test
+        void productNamesAreUniquePerBranch() {
+            saveProduct(branch.id(), "Coffee", 5);
+
+            StepVerifier.create(products.save(Product.create(branch.id(), "Coffee", 1, NOW)))
+                    .expectErrorMessage("A product named 'Coffee' already exists in this branch")
+                    .verify();
+        }
+
+        @Test
+        void savePersistsStockChanges() {
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+
+            StepVerifier.create(products.save(coffee.withStock(42, NOW))
+                            .then(products.findByIdAndBranchId(coffee.id(), branch.id())))
+                    .assertNext(found -> assertThat(found.stock()).isEqualTo(42))
+                    .verifyComplete();
+        }
+    }
+}
