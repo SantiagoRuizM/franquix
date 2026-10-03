@@ -1,9 +1,7 @@
 import { Container } from '@cloudflare/containers';
+import { handleRequest, INSTANCE_NAME } from './edge';
 
 const API_PORT = 8080;
-
-/** Name of the single container instance every request is routed to. */
-const INSTANCE_NAME = 'franquix-primary';
 
 /**
  * Durable Object that owns the Franquix API container.
@@ -23,6 +21,9 @@ export class FranquixContainer extends Container<Env> {
     // Worker secrets are not visible to the container; hand them over explicitly
     this.envVars = {
       MONGODB_URI: env.MONGODB_URI,
+      JWT_SECRET: env.JWT_SECRET,
+      ADMIN_EMAIL: env.ADMIN_EMAIL,
+      ADMIN_PASSWORD: env.ADMIN_PASSWORD,
       MONGODB_DATABASE: 'franquix',
       SPRING_PROFILES_ACTIVE: 'prod',
       PORT: String(API_PORT),
@@ -59,33 +60,7 @@ export class FranquixContainer extends Container<Env> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-
-    // Answered by the Worker itself, so checking the edge does not wake the container
-    if (url.pathname === '/edge-health') {
-      return Response.json({ status: 'UP', component: 'worker' });
-    }
-
-    if (!env.MONGODB_URI) {
-      return Response.json(
-        {
-          type: 'about:blank',
-          title: 'Service Unavailable',
-          status: 503,
-          detail: 'MONGODB_URI secret is not configured',
-          instance: url.pathname,
-        },
-        { status: 503, headers: { 'content-type': 'application/problem+json' } },
-      );
-    }
-
-    // Tell Spring the public scheme and host, so generated Location headers are correct
-    const forwarded = new Request(request);
-    forwarded.headers.set('X-Forwarded-Proto', url.protocol.replace(':', ''));
-    forwarded.headers.set('X-Forwarded-Host', url.host);
-
-    const container = env.FRANQUIX_CONTAINER.getByName(INSTANCE_NAME);
-    return container.fetch(forwarded);
+  fetch(request: Request, env: Env): Promise<Response> {
+    return handleRequest(request, env, () => env.FRANQUIX_CONTAINER.getByName(INSTANCE_NAME));
   },
 } satisfies ExportedHandler<Env>;

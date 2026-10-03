@@ -38,10 +38,11 @@
     }
   },
 
-  // Values are never committed. MONGODB_URI is the Atlas connection string, set with
-  // `npx wrangler secret put MONGODB_URI` (CI uses `wrangler deploy --secrets-file`) and,
+  // Values are never committed. MONGODB_URI is the Atlas connection string; JWT_SECRET signs access
+  // tokens; ADMIN_EMAIL / ADMIN_PASSWORD create the first admin. Set each with
+  // `npx wrangler secret put <NAME>` (CI uses `wrangler deploy --secrets-file`) and,
   // for `wrangler dev`, in a git-ignored .dev.vars file.
   "secrets": {
-    "required": ["MONGODB_URI"]
+    "required": ["MONGODB_URI", "JWT_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD"]
   }
 }
