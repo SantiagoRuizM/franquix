@@ -40,7 +40,7 @@ class BranchUseCasesTest {
 
     @BeforeEach
     void setUp() {
-        hierarchy = new HierarchyResolver(franchises, branches, products);
+        hierarchy = new HierarchyResolver(franchises, branches);
     }
 
     @Nested
@@ -58,7 +58,7 @@ class BranchUseCasesTest {
             Branch toSave = new Branch(null, FRANCHISE_ID, "Downtown", NOW, NOW);
             Branch saved = new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW);
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.save(toSave)).thenReturn(Mono.just(saved));
+            when(branches.create(toSave)).thenReturn(Mono.just(saved));
 
             StepVerifier.create(useCase.add(FRANCHISE_ID, " Downtown "))
                     .expectNext(saved)
@@ -72,13 +72,13 @@ class BranchUseCasesTest {
             StepVerifier.create(useCase.add(FRANCHISE_ID, "Downtown"))
                     .expectError(NotFoundException.class)
                     .verify();
-            verify(branches, never()).save(any());
+            verify(branches, never()).create(any());
         }
 
         @Test
         void propagatesDuplicateNameErrors() {
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.save(any())).thenReturn(Mono.error(DuplicateNameException.branch("Downtown")));
+            when(branches.create(any())).thenReturn(Mono.error(DuplicateNameException.branch("Downtown")));
 
             StepVerifier.create(useCase.add(FRANCHISE_ID, "Downtown"))
                     .expectError(DuplicateNameException.class)
@@ -106,37 +106,53 @@ class BranchUseCasesTest {
         }
 
         @Test
-        void savesTheRenamedBranch() {
+        void renamesAtomicallyWithinTheFranchise() {
             Branch renamed = new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown", CREATED, NOW);
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
-            when(branches.save(renamed)).thenReturn(Mono.just(renamed));
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW)).thenReturn(Mono.just(renamed));
 
-            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, " Uptown "))
                     .expectNext(renamed)
                     .verifyComplete();
         }
 
         @Test
-        void failsWhenTheBranchIsNotInTheFranchise() {
-            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.empty());
+        void failsWhenTheFranchiseDoesNotExist() {
+            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
-                    .expectError(NotFoundException.class)
+                    .expectErrorMessage("Franchise 'franchise-1' not found")
                     .verify();
-            verify(branches, never()).save(any());
+            verify(branches, never()).rename(any(), any(), any(), any());
+        }
+
+        @Test
+        void failsWhenTheBranchIsNotInTheFranchise() {
+            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW)).thenReturn(Mono.empty());
+
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
+                    .expectErrorMessage("Branch 'branch-1' not found in franchise 'franchise-1'")
+                    .verify();
         }
 
         @Test
         void propagatesDuplicateNameErrors() {
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
-            when(branches.save(any())).thenReturn(Mono.error(DuplicateNameException.branch("Uptown")));
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW))
+                    .thenReturn(Mono.error(DuplicateNameException.branch("Uptown")));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
                     .expectError(DuplicateNameException.class)
                     .verify();
+        }
+
+        @Test
+        void rejectsAnInvalidNameWithoutTouchingTheRepositories() {
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "​"))
+                    .expectError(DomainValidationException.class)
+                    .verify();
+            verify(franchises, never()).findById(any());
         }
     }
 }

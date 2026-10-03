@@ -19,6 +19,6 @@ public class CreateFranchiseService implements CreateFranchiseUseCase {
     @Override
     public Mono<Franchise> create(String name) {
         return Mono.fromCallable(() -> Franchise.create(name, clock.instant()))
-                .flatMap(franchises::save);
+                .flatMap(franchises::create);
     }
 }

@@ -43,7 +43,7 @@ class FranchiseUseCasesTest {
 
     @BeforeEach
     void setUp() {
-        hierarchy = new HierarchyResolver(franchises, branches, products);
+        hierarchy = new HierarchyResolver(franchises, branches);
     }
 
     @Nested
@@ -60,7 +60,7 @@ class FranchiseUseCasesTest {
         void savesATrimmedFranchiseStampedWithTheClock() {
             Franchise expectedToSave = new Franchise(null, "Acme", NOW, NOW);
             Franchise saved = new Franchise(FRANCHISE_ID, "Acme", NOW, NOW);
-            when(franchises.save(expectedToSave)).thenReturn(Mono.just(saved));
+            when(franchises.create(expectedToSave)).thenReturn(Mono.just(saved));
 
             StepVerifier.create(useCase.create("  Acme "))
                     .expectNext(saved)
@@ -69,7 +69,7 @@ class FranchiseUseCasesTest {
 
         @Test
         void propagatesDuplicateNameErrors() {
-            when(franchises.save(any())).thenReturn(Mono.error(DuplicateNameException.franchise("Acme")));
+            when(franchises.create(any())).thenReturn(Mono.error(DuplicateNameException.franchise("Acme")));
 
             StepVerifier.create(useCase.create("Acme"))
                     .expectError(DuplicateNameException.class)
@@ -81,7 +81,7 @@ class FranchiseUseCasesTest {
             StepVerifier.create(useCase.create("  "))
                     .expectError(DomainValidationException.class)
                     .verify();
-            verify(franchises, never()).save(any());
+            verify(franchises, never()).create(any());
         }
     }
 
@@ -92,34 +92,32 @@ class FranchiseUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new RenameFranchiseService(hierarchy, franchises, CLOCK);
+            useCase = new RenameFranchiseService(franchises, CLOCK);
         }
 
         @Test
-        void savesTheRenamedFranchise() {
+        void renamesAtomicallyWithTheNormalizedName() {
             Franchise renamed = new Franchise(FRANCHISE_ID, "Acme Global", CREATED, NOW);
-            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(franchises.save(renamed)).thenReturn(Mono.just(renamed));
+            when(franchises.rename(FRANCHISE_ID, "Acme Global", NOW)).thenReturn(Mono.just(renamed));
 
-            StepVerifier.create(useCase.rename(FRANCHISE_ID, "Acme Global"))
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, "  Acme   Global "))
                     .expectNext(renamed)
                     .verifyComplete();
         }
 
         @Test
         void failsWhenTheFranchiseDoesNotExist() {
-            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.empty());
+            when(franchises.rename(FRANCHISE_ID, "Acme Global", NOW)).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, "Acme Global"))
-                    .expectError(NotFoundException.class)
+                    .expectErrorMessage("Franchise 'franchise-1' not found")
                     .verify();
-            verify(franchises, never()).save(any());
         }
 
         @Test
         void propagatesDuplicateNameErrors() {
-            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(franchises.save(any())).thenReturn(Mono.error(DuplicateNameException.franchise("Other")));
+            when(franchises.rename(FRANCHISE_ID, "Other", NOW))
+                    .thenReturn(Mono.error(DuplicateNameException.franchise("Other")));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, "Other"))
                     .expectError(DuplicateNameException.class)
@@ -127,13 +125,11 @@ class FranchiseUseCasesTest {
         }
 
         @Test
-        void rejectsAnInvalidName() {
-            when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-
+        void rejectsAnInvalidNameWithoutTouchingTheRepository() {
             StepVerifier.create(useCase.rename(FRANCHISE_ID, ""))
                     .expectError(DomainValidationException.class)
                     .verify();
-            verify(franchises, never()).save(any());
+            verify(franchises, never()).rename(any(), any(), any());
         }
     }
 

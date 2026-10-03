@@ -3,9 +3,13 @@ package com.franquix.franchises.infrastructure.adapter.mongo;
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
+import com.franquix.franchises.infrastructure.adapter.mongo.document.ProductDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.mapper.MongoDocumentMapper;
 import com.franquix.franchises.infrastructure.adapter.mongo.repository.ProductMongoRepository;
+import java.time.Instant;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -13,17 +17,32 @@ import reactor.core.publisher.Mono;
 @Component
 public class MongoProductRepositoryAdapter implements ProductRepositoryPort {
 
-    private final ProductMongoRepository repository;
+    private static final String BRANCH_ID = "branchId";
 
-    public MongoProductRepositoryAdapter(ProductMongoRepository repository) {
+    private final ProductMongoRepository repository;
+    private final ReactiveMongoTemplate template;
+
+    public MongoProductRepositoryAdapter(ProductMongoRepository repository, ReactiveMongoTemplate template) {
         this.repository = repository;
+        this.template = template;
     }
 
     @Override
-    public Mono<Product> save(Product product) {
-        return repository.save(MongoDocumentMapper.toDocument(product))
+    public Mono<Product> create(Product product) {
+        return template.insert(MongoDocumentMapper.toDocument(product))
                 .map(MongoDocumentMapper::toDomain)
                 .onErrorMap(DuplicateKeyException.class, error -> DuplicateNameException.product(product.name()));
+    }
+
+    @Override
+    public Mono<Product> rename(String productId, String branchId, String name, Instant updatedAt) {
+        return modify(productId, branchId, AtomicUpdates.rename(name, updatedAt))
+                .onErrorMap(DuplicateKeyException.class, error -> DuplicateNameException.product(name));
+    }
+
+    @Override
+    public Mono<Product> updateStock(String productId, String branchId, int stock, Instant updatedAt) {
+        return modify(productId, branchId, AtomicUpdates.stock(stock, updatedAt));
     }
 
     @Override
@@ -51,7 +70,20 @@ public class MongoProductRepositoryAdapter implements ProductRepositoryPort {
     }
 
     @Override
-    public Mono<Void> deleteById(String productId) {
-        return ObjectIds.ifValid(productId, repository::deleteById);
+    public Mono<Boolean> deleteByIdAndBranchId(String productId, String branchId) {
+        if (!ObjectIds.allValid(productId, branchId)) {
+            return Mono.just(false);
+        }
+        return template.remove(AtomicUpdates.byIdAndParent(productId, BRANCH_ID, branchId), ProductDocument.class)
+                .map(result -> result.getDeletedCount() > 0);
+    }
+
+    private Mono<Product> modify(String productId, String branchId, Update update) {
+        if (!ObjectIds.allValid(productId, branchId)) {
+            return Mono.empty();
+        }
+        return template.findAndModify(AtomicUpdates.byIdAndParent(productId, BRANCH_ID, branchId), update,
+                        AtomicUpdates.RETURN_NEW_NO_UPSERT, ProductDocument.class)
+                .map(MongoDocumentMapper::toDomain);
     }
 }

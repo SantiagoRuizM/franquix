@@ -19,8 +19,4 @@ public record Franchise(String id, String name, Instant createdAt, Instant updat
     public static Franchise create(String name, Instant now) {
         return new Franchise(null, name, now, now);
     }
-
-    public Franchise rename(String newName, Instant now) {
-        return new Franchise(id, newName, createdAt, now);
-    }
 }

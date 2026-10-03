@@ -1,5 +1,7 @@
 package com.franquix.franchises.application.usecase;
 
+import com.franquix.franchises.domain.exception.NotFoundException;
+import com.franquix.franchises.domain.model.DomainRules;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.domain.port.in.UpdateProductStockUseCase;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
@@ -20,8 +22,9 @@ public class UpdateProductStockService implements UpdateProductStockUseCase {
 
     @Override
     public Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock) {
-        return hierarchy.requireProduct(franchiseId, branchId, productId)
-                .map(product -> product.withStock(stock, clock.instant()))
-                .flatMap(products::save);
+        return Mono.fromCallable(() -> DomainRules.requireValidStock(stock))
+                .flatMap(validStock -> hierarchy.requireBranch(franchiseId, branchId)
+                        .flatMap(branch -> products.updateStock(productId, branch.id(), validStock, clock.instant()))
+                        .switchIfEmpty(Mono.error(() -> NotFoundException.product(branchId, productId))));
     }
 }

@@ -1,5 +1,6 @@
 package com.franquix.franchises.application.usecase;
 
+import com.franquix.franchises.domain.exception.NotFoundException;
 import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
 import reactor.core.publisher.Mono;
@@ -16,7 +17,10 @@ public class DeleteProductService implements DeleteProductUseCase {
 
     @Override
     public Mono<Void> delete(String franchiseId, String branchId, String productId) {
-        return hierarchy.requireProduct(franchiseId, branchId, productId)
-                .flatMap(product -> products.deleteById(product.id()));
+        return hierarchy.requireBranch(franchiseId, branchId)
+                .flatMap(branch -> products.deleteByIdAndBranchId(productId, branch.id()))
+                .filter(Boolean::booleanValue)
+                .switchIfEmpty(Mono.error(() -> NotFoundException.product(branchId, productId)))
+                .then();
     }
 }

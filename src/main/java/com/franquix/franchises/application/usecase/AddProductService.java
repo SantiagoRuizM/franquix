@@ -22,6 +22,6 @@ public class AddProductService implements AddProductUseCase {
     public Mono<Product> add(String franchiseId, String branchId, String name, int stock) {
         return hierarchy.requireBranch(franchiseId, branchId)
                 .map(branch -> Product.create(branch.id(), name, stock, clock.instant()))
-                .flatMap(products::save);
+                .flatMap(products::create);
     }
 }

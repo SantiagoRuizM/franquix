@@ -21,8 +21,4 @@ public record Branch(String id, String franchiseId, String name, Instant created
     public static Branch create(String franchiseId, String name, Instant now) {
         return new Branch(null, franchiseId, name, now, now);
     }
-
-    public Branch rename(String newName, Instant now) {
-        return new Branch(id, franchiseId, newName, createdAt, now);
-    }
 }
