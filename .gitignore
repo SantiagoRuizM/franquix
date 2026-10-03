@@ -2,8 +2,8 @@
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
-out/
-bin/
+/out/
+/bin/
 *.class
 *.log
 
