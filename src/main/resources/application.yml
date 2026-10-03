@@ -7,9 +7,6 @@ spring:
     mongodb:
       uri: ${MONGODB_URI}
       database: ${MONGODB_DATABASE:franquix}
-  webflux:
-    problemdetails:
-      enabled: true
   jackson:
     default-property-inclusion: non_null
     serialization:
