@@ -297,7 +297,7 @@ Reports:
 
 - Tests: `build/reports/tests/test/index.html`
 - Coverage: `build/reports/jacoco/test/html/index.html`. The build fails below **80 %** line or
-  branch coverage. Current: about 93 % lines, 86 % branches.
+  branch coverage. Current: 98.9 % lines, 86.3 % branches (139 tests).
 
 ---
 
