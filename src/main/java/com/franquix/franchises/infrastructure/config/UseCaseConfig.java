@@ -7,7 +7,6 @@ import com.franquix.franchises.application.usecase.DeleteProductService;
 import com.franquix.franchises.application.usecase.GetFranchiseService;
 import com.franquix.franchises.application.usecase.GetTopStockProductsService;
 import com.franquix.franchises.application.usecase.HierarchyResolver;
-import com.franquix.franchises.application.usecase.ListFranchisesService;
 import com.franquix.franchises.application.usecase.RenameBranchService;
 import com.franquix.franchises.application.usecase.RenameFranchiseService;
 import com.franquix.franchises.application.usecase.RenameProductService;
@@ -18,7 +17,6 @@ import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
 import com.franquix.franchises.domain.port.in.GetFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
-import com.franquix.franchises.domain.port.in.ListFranchisesUseCase;
 import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.RenameProductUseCase;
@@ -27,7 +25,6 @@ import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
 import java.time.Clock;
-import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -38,10 +35,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class UseCaseConfig {
 
-    /** Millisecond ticks: MongoDB stores millisecond precision, so responses match what is persisted. */
     @Bean
     Clock clock() {
-        return Clock.tick(Clock.systemUTC(), Duration.ofMillis(1));
+        return Clock.systemUTC();
     }
 
     @Bean
@@ -52,11 +48,6 @@ public class UseCaseConfig {
     @Bean
     CreateFranchiseUseCase createFranchiseUseCase(FranchiseRepositoryPort franchises, Clock clock) {
         return new CreateFranchiseService(franchises, clock);
-    }
-
-    @Bean
-    ListFranchisesUseCase listFranchisesUseCase(FranchiseRepositoryPort franchises) {
-        return new ListFranchisesService(franchises);
     }
 
     @Bean

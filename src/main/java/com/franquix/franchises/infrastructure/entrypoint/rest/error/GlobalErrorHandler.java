@@ -1,7 +1,6 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.error;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.franquix.franchises.domain.exception.AuthenticationFailedException;
 import com.franquix.franchises.domain.exception.DomainValidationException;
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.exception.NotFoundException;
@@ -25,9 +24,8 @@ import reactor.core.publisher.Mono;
  *
  * <ul>
  *   <li>400 - request validation, malformed body or id, domain invariant violations</li>
- *   <li>401 - rejected credentials or refresh token (with {@code WWW-Authenticate})</li>
  *   <li>404 - unknown resource or route</li>
- *   <li>409 - duplicate name or email</li>
+ *   <li>409 - duplicate name</li>
  *   <li>other framework statuses (405, 415, ...) are passed through</li>
  *   <li>500 - anything else, without leaking internals; the cause is logged</li>
  * </ul>
@@ -53,11 +51,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         }
         ProblemDetail problem = toProblem(error);
         log(exchange, problem, error);
-        HttpHeaders headers = new HttpHeaders();
-        if (error instanceof AuthenticationFailedException) {
-            headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
-        }
-        return writer.write(exchange, problem, headers);
+        return writer.write(exchange, problem, new HttpHeaders());
     }
 
     private ProblemDetail toProblem(Throwable error) {
@@ -70,8 +64,6 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
                 yield problem;
             }
             case DomainValidationException e -> ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-            case AuthenticationFailedException e ->
-                    ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
             case NotFoundException e -> ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
             case DuplicateNameException e -> ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
             case ServerWebInputException e ->

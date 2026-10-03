@@ -4,16 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.franquix.franchises.support.E2ESupport;
-import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 
 /**
  * Franchise API end to end: HTTP server, security, use cases, MongoDB adapter and indexes. Each test
@@ -202,42 +196,11 @@ class FranquixApiE2EIT extends E2ESupport {
     }
 
     @Test
-    void listPagesThroughFranchisesInNameOrder() {
-        createFranchise(unique("List A"));
-        createFranchise(unique("List B"));
-
-        client.get().uri(BASE + "?size=1")
+    void requestsWithoutTheTokenAreRejected() {
+        http.get().uri(BASE + "/{f}", "6650f1c2a1b2c3d4e5f60718")
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.items.length()").isEqualTo(1)
-                .jsonPath("$.size").isEqualTo(1)
-                .jsonPath("$.totalElements").value(total -> assertThat(((Number) total).longValue()).isGreaterThanOrEqualTo(2))
-                .jsonPath("$.totalPages").value(pages -> assertThat(((Number) pages).longValue()).isGreaterThanOrEqualTo(2));
-        client.get().uri(BASE + "?size=500")
-                .exchange()
-                .expectStatus().isBadRequest();
-    }
-
-    @Test
-    void parallelCreatesOfTheSameNameHaveExactlyOneWinner(@LocalServerPort int port) {
-        String name = unique("Race");
-        String token = login(ADMIN_EMAIL, ADMIN_PASSWORD).get("accessToken").asText();
-        WebClient webClient = WebClient.builder()
-                .baseUrl("http://localhost:" + port)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build();
-
-        // ten truly concurrent requests, half of them differing only in letter case
-        List<Integer> statuses = Flux.range(0, 10)
-                .flatMap(i -> webClient.post().uri(BASE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("name", i % 2 == 0 ? name : name.toUpperCase()))
-                        .exchangeToMono(response -> response.releaseBody().thenReturn(response.statusCode().value())), 10)
-                .collectList()
-                .block(Duration.ofSeconds(30));
-
-        assertThat(statuses).containsOnly(201, 409).filteredOn(status -> status == 201).hasSize(1);
+                .expectStatus().isUnauthorized()
+                .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON);
     }
 
     @Test

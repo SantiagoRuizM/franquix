@@ -3,7 +3,6 @@ package com.franquix.franchises.infrastructure.entrypoint.rest.router;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.BranchResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.CreateProductRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseDetailResponse;
-import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchisePageResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.ProductResponse;
@@ -57,22 +56,6 @@ public class FranchiseRouter {
                                             content = @Content(schema = @Schema(implementation = FranchiseResponse.class))),
                                     @ApiResponse(responseCode = "400", ref = "BadRequest"),
                                     @ApiResponse(responseCode = "409", ref = "Conflict")})),
-            @RouterOperation(path = BASE_PATH, method = RequestMethod.GET,
-                    beanClass = FranchiseHandler.class, beanMethod = "list",
-                    operation = @Operation(operationId = "listFranchises", tags = "Franchises",
-                            summary = "List franchises, ordered by name",
-                            parameters = {
-                                    @Parameter(in = ParameterIn.QUERY, name = "page",
-                                            description = "Zero-based page number",
-                                            schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
-                                    @Parameter(in = ParameterIn.QUERY, name = "size",
-                                            description = "Items per page",
-                                            schema = @Schema(type = "integer", minimum = "1", maximum = "100",
-                                                    defaultValue = "20"))},
-                            responses = {
-                                    @ApiResponse(responseCode = "200", description = "One page of franchises",
-                                            content = @Content(schema = @Schema(implementation = FranchisePageResponse.class))),
-                                    @ApiResponse(responseCode = "400", ref = "BadRequest")})),
             @RouterOperation(path = BASE_PATH + FRANCHISE, method = RequestMethod.GET,
                     beanClass = FranchiseHandler.class, beanMethod = "get",
                     operation = @Operation(operationId = "getFranchise", tags = "Franchises",
@@ -200,7 +183,6 @@ public class FranchiseRouter {
             FranchiseHandler franchises, BranchHandler branches, ProductHandler products) {
         return RouterFunctions.route()
                 .path(BASE_PATH, api -> api
-                        .GET("", franchises::list)
                         .POST("", franchises::create)
                         .GET(FRANCHISE, franchises::get)
                         .PATCH(FRANCHISE + "/name", franchises::rename)
