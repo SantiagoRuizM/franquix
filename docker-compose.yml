@@ -29,6 +29,10 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       MONGODB_URI: mongodb://mongo:27017/franquix
       MONGODB_DATABASE: franquix
+      # Dev-only fallbacks so `docker compose up` works out of the box; set real values in .env
+      JWT_SECRET: ${JWT_SECRET:-compose-development-only-secret-change-me-0123456789}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@franquix.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-local-only}
     ports:
       - "8080:8080"
 
