@@ -1,0 +1,18 @@
+# Render Blueprint: deploys the Docker image as a free web service.
+# Render > New > Blueprint > pick this repository, then paste MONGODB_URI when asked.
+services:
+  - type: web
+    name: franquix-api
+    runtime: docker
+    plan: free
+    region: virginia            # same AWS region as the Atlas M0 cluster (US_EAST_1)
+    healthCheckPath: /actuator/health
+    # continuous deployment: every push to main is deployed once the GitHub Actions CI passes
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: MONGODB_URI          # terraform -chdir=infra/envs/prod output -raw mongodb_uri
+        sync: false
+      - key: API_TOKEN            # random 256-bit value; read it in the Render dashboard
+        generateValue: true
