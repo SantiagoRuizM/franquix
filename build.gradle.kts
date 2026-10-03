@@ -20,6 +20,7 @@ repositories {
 }
 
 val springdocVersion = "2.8.17"
+val archunitVersion = "1.5.1"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -33,6 +34,7 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mongodb")
+    testImplementation("com.tngtech.archunit:archunit-junit5:$archunitVersion")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
