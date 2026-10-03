@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars (ignored by git) and fill in.
+atlas_org_id = "000000000000000000000000"
+
+# Optional overrides
+# project_name = "franquix"
+# cluster_name = "franquix-prod"
+# region       = "US_EAST_1"
+# allowed_cidr_blocks = [
+#   { cidr_block = "203.0.113.10/32", comment = "my workstation" },
+# ]
