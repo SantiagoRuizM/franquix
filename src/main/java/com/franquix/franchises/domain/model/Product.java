@@ -23,12 +23,4 @@ public record Product(String id, String branchId, String name, int stock, Instan
     public static Product create(String branchId, String name, int stock, Instant now) {
         return new Product(null, branchId, name, stock, now, now);
     }
-
-    public Product rename(String newName, Instant now) {
-        return new Product(id, branchId, newName, stock, createdAt, now);
-    }
-
-    public Product withStock(int newStock, Instant now) {
-        return new Product(id, branchId, name, newStock, createdAt, now);
-    }
 }

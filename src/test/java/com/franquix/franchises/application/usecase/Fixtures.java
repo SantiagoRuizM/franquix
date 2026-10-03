@@ -33,10 +33,6 @@ final class Fixtures {
         return new Branch(id, FRANCHISE_ID, name, CREATED, CREATED);
     }
 
-    static Product product() {
-        return product(PRODUCT_ID, BRANCH_ID, "Coffee", 10);
-    }
-
     static Product product(String id, String branchId, String name, int stock) {
         return new Product(id, branchId, name, stock, CREATED, CREATED);
     }

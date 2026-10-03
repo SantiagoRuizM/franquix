@@ -1,5 +1,7 @@
 package com.franquix.franchises.application.usecase;
 
+import com.franquix.franchises.domain.exception.NotFoundException;
+import com.franquix.franchises.domain.model.DomainRules;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.domain.port.in.RenameProductUseCase;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
@@ -20,8 +22,9 @@ public class RenameProductService implements RenameProductUseCase {
 
     @Override
     public Mono<Product> rename(String franchiseId, String branchId, String productId, String newName) {
-        return hierarchy.requireProduct(franchiseId, branchId, productId)
-                .map(product -> product.rename(newName, clock.instant()))
-                .flatMap(products::save);
+        return Mono.fromCallable(() -> DomainRules.requireValidName("name", newName))
+                .flatMap(name -> hierarchy.requireBranch(franchiseId, branchId)
+                        .flatMap(branch -> products.rename(productId, branch.id(), name, clock.instant()))
+                        .switchIfEmpty(Mono.error(() -> NotFoundException.product(branchId, productId))));
     }
 }

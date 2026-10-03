@@ -22,6 +22,6 @@ public class AddBranchService implements AddBranchUseCase {
     public Mono<Branch> add(String franchiseId, String name) {
         return hierarchy.requireFranchise(franchiseId)
                 .map(franchise -> Branch.create(franchise.id(), name, clock.instant()))
-                .flatMap(branches::save);
+                .flatMap(branches::create);
     }
 }

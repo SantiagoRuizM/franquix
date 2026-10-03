@@ -61,15 +61,15 @@ class MongoRepositoryAdaptersIT {
     }
 
     private Franchise saveFranchise(String name) {
-        return franchises.save(Franchise.create(name, NOW)).block();
+        return franchises.create(Franchise.create(name, NOW)).block();
     }
 
     private Branch saveBranch(String franchiseId, String name) {
-        return branches.save(Branch.create(franchiseId, name, NOW)).block();
+        return branches.create(Branch.create(franchiseId, name, NOW)).block();
     }
 
     private Product saveProduct(String branchId, String name, int stock) {
-        return products.save(Product.create(branchId, name, stock, NOW)).block();
+        return products.create(Product.create(branchId, name, stock, NOW)).block();
     }
 
     @Test
@@ -110,7 +110,7 @@ class MongoRepositoryAdaptersIT {
         void franchiseNamesDifferingOnlyInCaseCollide() {
             saveFranchise("Acme");
 
-            StepVerifier.create(franchises.save(Franchise.create("ACME", NOW)))
+            StepVerifier.create(franchises.create(Franchise.create("ACME", NOW)))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -120,7 +120,7 @@ class MongoRepositoryAdaptersIT {
             Franchise franchise = saveFranchise("Acme");
             saveBranch(franchise.id(), "Main");
 
-            StepVerifier.create(branches.save(Branch.create(franchise.id(), "main", NOW)))
+            StepVerifier.create(branches.create(Branch.create(franchise.id(), "main", NOW)))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -130,7 +130,7 @@ class MongoRepositoryAdaptersIT {
             Branch branch = saveBranch(saveFranchise("Acme").id(), "Main");
             saveProduct(branch.id(), "Coffee", 1);
 
-            StepVerifier.create(products.save(Product.create(branch.id(), "cOFFEE", 1, NOW)))
+            StepVerifier.create(products.create(Product.create(branch.id(), "cOFFEE", 1, NOW)))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -139,7 +139,7 @@ class MongoRepositoryAdaptersIT {
         void accentsStillMakeNamesDistinct() {
             saveFranchise("Cafe");
 
-            StepVerifier.create(franchises.save(Franchise.create("Café", NOW)))
+            StepVerifier.create(franchises.create(Franchise.create("Café", NOW)))
                     .expectNextCount(1)
                     .verifyComplete();
         }
@@ -149,7 +149,7 @@ class MongoRepositoryAdaptersIT {
     class Franchises {
 
         @Test
-        void saveAssignsAnObjectIdAndFindByIdReadsItBack() {
+        void createAssignsAnObjectIdAndFindByIdReadsItBack() {
             Franchise saved = saveFranchise("Acme");
 
             assertThat(ObjectId.isValid(saved.id())).isTrue();
@@ -159,20 +159,39 @@ class MongoRepositoryAdaptersIT {
         }
 
         @Test
-        void saveUpdatesAnExistingFranchise() {
+        void renameUpdatesOnlyTheNameAndTimestamp() {
             Franchise saved = saveFranchise("Acme");
+            Instant later = NOW.plusSeconds(60);
 
-            StepVerifier.create(franchises.save(saved.rename("Acme Global", NOW))
-                            .then(franchises.findById(saved.id())))
-                    .assertNext(found -> assertThat(found.name()).isEqualTo("Acme Global"))
+            StepVerifier.create(franchises.rename(saved.id(), "Acme Global", later))
+                    .expectNext(new Franchise(saved.id(), "Acme Global", saved.createdAt(), later))
                     .verifyComplete();
+        }
+
+        @Test
+        void renameIsEmptyForAMissingFranchiseAndCreatesNothing() {
+            StepVerifier.create(franchises.rename(MISSING_ID, "Ghost", NOW)).verifyComplete();
+            StepVerifier.create(franchises.rename("bad", "Ghost", NOW)).verifyComplete();
+            StepVerifier.create(template.count(new Query(), FranchiseDocument.COLLECTION))
+                    .expectNext(0L)
+                    .verifyComplete();
+        }
+
+        @Test
+        void renameToATakenNameIsADuplicate() {
+            saveFranchise("Acme");
+            Franchise other = saveFranchise("Other");
+
+            StepVerifier.create(franchises.rename(other.id(), "acme", NOW))
+                    .expectErrorMessage("A franchise named 'acme' already exists")
+                    .verify();
         }
 
         @Test
         void rejectsADuplicateName() {
             saveFranchise("Acme");
 
-            StepVerifier.create(franchises.save(Franchise.create("Acme", NOW)))
+            StepVerifier.create(franchises.create(Franchise.create("Acme", NOW)))
                     .expectErrorMessage("A franchise named 'Acme' already exists")
                     .verify();
         }
@@ -181,7 +200,7 @@ class MongoRepositoryAdaptersIT {
         void renamingToTheCurrentNameIsNotADuplicate() {
             Franchise saved = saveFranchise("Acme");
 
-            StepVerifier.create(franchises.save(saved.rename("Acme", NOW)))
+            StepVerifier.create(franchises.rename(saved.id(), "Acme", NOW))
                     .expectNextCount(1)
                     .verifyComplete();
         }
@@ -238,10 +257,34 @@ class MongoRepositoryAdaptersIT {
             Franchise other = saveFranchise("Other");
             saveBranch(acme.id(), "Downtown");
 
-            StepVerifier.create(branches.save(Branch.create(other.id(), "Downtown", NOW)))
+            StepVerifier.create(branches.create(Branch.create(other.id(), "Downtown", NOW)))
                     .expectNextCount(1)
                     .verifyComplete();
-            StepVerifier.create(branches.save(Branch.create(acme.id(), "Downtown", NOW)))
+            StepVerifier.create(branches.create(Branch.create(acme.id(), "Downtown", NOW)))
+                    .expectError(DuplicateNameException.class)
+                    .verify();
+        }
+
+        @Test
+        void renameOnlyAppliesInsideTheOwningFranchise() {
+            Franchise acme = saveFranchise("Acme");
+            Franchise other = saveFranchise("Other");
+            Branch branch = saveBranch(acme.id(), "Downtown");
+
+            StepVerifier.create(branches.rename(branch.id(), other.id(), "Hijacked", NOW)).verifyComplete();
+            StepVerifier.create(branches.rename(branch.id(), acme.id(), "Uptown", NOW))
+                    .assertNext(renamed -> assertThat(renamed.name()).isEqualTo("Uptown"))
+                    .verifyComplete();
+            StepVerifier.create(branches.rename("bad", acme.id(), "Uptown", NOW)).verifyComplete();
+        }
+
+        @Test
+        void renameToATakenNameIsADuplicate() {
+            Franchise acme = saveFranchise("Acme");
+            saveBranch(acme.id(), "Downtown");
+            Branch uptown = saveBranch(acme.id(), "Uptown");
+
+            StepVerifier.create(branches.rename(uptown.id(), acme.id(), "DOWNTOWN", NOW))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -299,31 +342,92 @@ class MongoRepositoryAdaptersIT {
         }
 
         @Test
-        void deleteByIdRemovesTheProduct() {
+        void deleteRemovesTheProductOnlyFromItsBranch() {
+            Branch otherBranch = saveBranch(branch.franchiseId(), "Uptown");
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
 
-            StepVerifier.create(products.deleteById(coffee.id())
-                            .then(products.findByIdAndBranchId(coffee.id(), branch.id())))
+            StepVerifier.create(products.deleteByIdAndBranchId(coffee.id(), otherBranch.id()))
+                    .expectNext(false)
                     .verifyComplete();
-            StepVerifier.create(products.deleteById("bad")).verifyComplete();
+            StepVerifier.create(products.deleteByIdAndBranchId(coffee.id(), branch.id()))
+                    .expectNext(true)
+                    .verifyComplete();
+            StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id())).verifyComplete();
+            StepVerifier.create(products.deleteByIdAndBranchId(coffee.id(), branch.id()))
+                    .expectNext(false)
+                    .verifyComplete();
+            StepVerifier.create(products.deleteByIdAndBranchId("bad", branch.id()))
+                    .expectNext(false)
+                    .verifyComplete();
+        }
+
+        @Test
+        void updatingADeletedProductNeverRecreatesIt() {
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+            products.deleteByIdAndBranchId(coffee.id(), branch.id()).block();
+
+            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 9, NOW)).verifyComplete();
+            StepVerifier.create(products.rename(coffee.id(), branch.id(), "Espresso", NOW)).verifyComplete();
+            StepVerifier.create(template.count(new Query(), ProductDocument.COLLECTION))
+                    .expectNext(0L)
+                    .verifyComplete();
+        }
+
+        @Test
+        void stockUpdateAndRenameNeverOverwriteEachOther() {
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+
+            // each request carries only its own field, so applying them in any order keeps both changes
+            products.rename(coffee.id(), branch.id(), "Espresso", NOW).block();
+            products.updateStock(coffee.id(), branch.id(), 42, NOW).block();
+
+            StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id()))
+                    .assertNext(found -> {
+                        assertThat(found.name()).isEqualTo("Espresso");
+                        assertThat(found.stock()).isEqualTo(42);
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        void updatesOnlyApplyInsideTheOwningBranch() {
+            Branch otherBranch = saveBranch(branch.franchiseId(), "Uptown");
+            Product coffee = saveProduct(branch.id(), "Coffee", 5);
+
+            StepVerifier.create(products.updateStock(coffee.id(), otherBranch.id(), 99, NOW)).verifyComplete();
+            StepVerifier.create(products.rename(coffee.id(), otherBranch.id(), "Hijacked", NOW)).verifyComplete();
+            StepVerifier.create(products.updateStock("bad", branch.id(), 1, NOW)).verifyComplete();
+            StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id()))
+                    .expectNext(coffee)
+                    .verifyComplete();
+        }
+
+        @Test
+        void renameToATakenNameIsADuplicate() {
+            saveProduct(branch.id(), "Coffee", 5);
+            Product tea = saveProduct(branch.id(), "Tea", 1);
+
+            StepVerifier.create(products.rename(tea.id(), branch.id(), "coffee", NOW))
+                    .expectErrorMessage("A product named 'coffee' already exists in this branch")
+                    .verify();
         }
 
         @Test
         void productNamesAreUniquePerBranch() {
             saveProduct(branch.id(), "Coffee", 5);
 
-            StepVerifier.create(products.save(Product.create(branch.id(), "Coffee", 1, NOW)))
+            StepVerifier.create(products.create(Product.create(branch.id(), "Coffee", 1, NOW)))
                     .expectErrorMessage("A product named 'Coffee' already exists in this branch")
                     .verify();
         }
 
         @Test
-        void savePersistsStockChanges() {
+        void updateStockReturnsTheUpdatedProduct() {
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
+            Instant later = NOW.plusSeconds(60);
 
-            StepVerifier.create(products.save(coffee.withStock(42, NOW))
-                            .then(products.findByIdAndBranchId(coffee.id(), branch.id())))
-                    .assertNext(found -> assertThat(found.stock()).isEqualTo(42))
+            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 42, later))
+                    .expectNext(new Product(coffee.id(), branch.id(), "Coffee", 42, coffee.createdAt(), later))
                     .verifyComplete();
         }
     }

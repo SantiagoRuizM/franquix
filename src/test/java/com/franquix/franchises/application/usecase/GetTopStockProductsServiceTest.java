@@ -36,7 +36,7 @@ class GetTopStockProductsServiceTest {
     @BeforeEach
     void setUp() {
         useCase = new GetTopStockProductsService(
-                new HierarchyResolver(franchises, branches, products), branches, products);
+                new HierarchyResolver(franchises, branches), branches, products);
     }
 
     @Test

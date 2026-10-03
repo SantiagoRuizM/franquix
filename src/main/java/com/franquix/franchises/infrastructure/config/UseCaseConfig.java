@@ -43,9 +43,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    HierarchyResolver hierarchyResolver(
-            FranchiseRepositoryPort franchises, BranchRepositoryPort branches, ProductRepositoryPort products) {
-        return new HierarchyResolver(franchises, branches, products);
+    HierarchyResolver hierarchyResolver(FranchiseRepositoryPort franchises, BranchRepositoryPort branches) {
+        return new HierarchyResolver(franchises, branches);
     }
 
     @Bean
@@ -60,9 +59,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    RenameFranchiseUseCase renameFranchiseUseCase(
-            HierarchyResolver hierarchy, FranchiseRepositoryPort franchises, Clock clock) {
-        return new RenameFranchiseService(hierarchy, franchises, clock);
+    RenameFranchiseUseCase renameFranchiseUseCase(FranchiseRepositoryPort franchises, Clock clock) {
+        return new RenameFranchiseService(franchises, clock);
     }
 
     @Bean

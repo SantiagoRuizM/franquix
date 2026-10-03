@@ -2,8 +2,8 @@ package com.franquix.franchises.application.usecase;
 
 import static com.franquix.franchises.application.usecase.Fixtures.BRANCH_ID;
 import static com.franquix.franchises.application.usecase.Fixtures.FRANCHISE_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.PRODUCT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import com.franquix.franchises.domain.exception.NotFoundException;
 import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
-import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,14 +26,12 @@ class HierarchyResolverTest {
     private FranchiseRepositoryPort franchises;
     @Mock
     private BranchRepositoryPort branches;
-    @Mock
-    private ProductRepositoryPort products;
 
     private HierarchyResolver resolver;
 
     @BeforeEach
     void setUp() {
-        resolver = new HierarchyResolver(franchises, branches, products);
+        resolver = new HierarchyResolver(franchises, branches);
     }
 
     @Test
@@ -58,13 +55,23 @@ class HierarchyResolverTest {
     }
 
     @Test
+    void requireBranchEmitsTheBranch() {
+        when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
+        when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
+
+        StepVerifier.create(resolver.requireBranch(FRANCHISE_ID, BRANCH_ID))
+                .expectNext(Fixtures.branch())
+                .verifyComplete();
+    }
+
+    @Test
     void requireBranchDoesNotLookUpTheBranchWhenTheFranchiseIsMissing() {
         when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.empty());
 
         StepVerifier.create(resolver.requireBranch(FRANCHISE_ID, BRANCH_ID))
                 .expectErrorMessage("Franchise 'franchise-1' not found")
                 .verify();
-        verify(branches, never()).findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID);
+        verify(branches, never()).findByIdAndFranchiseId(anyString(), anyString());
     }
 
     @Test
@@ -74,28 +81,6 @@ class HierarchyResolverTest {
 
         StepVerifier.create(resolver.requireBranch(FRANCHISE_ID, BRANCH_ID))
                 .expectErrorMessage("Branch 'branch-1' not found in franchise 'franchise-1'")
-                .verify();
-    }
-
-    @Test
-    void requireProductEmitsTheProduct() {
-        when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-        when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
-        when(products.findByIdAndBranchId(PRODUCT_ID, BRANCH_ID)).thenReturn(Mono.just(Fixtures.product()));
-
-        StepVerifier.create(resolver.requireProduct(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID))
-                .expectNext(Fixtures.product())
-                .verifyComplete();
-    }
-
-    @Test
-    void requireProductFailsWhenTheProductBelongsToAnotherBranch() {
-        when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-        when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
-        when(products.findByIdAndBranchId(PRODUCT_ID, BRANCH_ID)).thenReturn(Mono.empty());
-
-        StepVerifier.create(resolver.requireProduct(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID))
-                .expectErrorMessage("Product 'product-1' not found in branch 'branch-1'")
                 .verify();
     }
 }

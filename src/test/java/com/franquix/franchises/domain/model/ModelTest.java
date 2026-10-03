@@ -13,33 +13,18 @@ import org.junit.jupiter.api.Test;
 class ModelTest {
 
     private static final Instant CREATED = Instant.parse("2026-01-01T00:00:00Z");
-    private static final Instant LATER = Instant.parse("2026-02-01T00:00:00Z");
 
     @Nested
     class FranchiseModel {
 
         @Test
-        void createTrimsTheNameAndStampsBothTimestamps() {
-            Franchise franchise = Franchise.create("  Acme  ", CREATED);
+        void createNormalizesTheNameAndStampsBothTimestamps() {
+            Franchise franchise = Franchise.create("  Acme   Coffee ", CREATED);
 
             assertThat(franchise.id()).isNull();
-            assertThat(franchise.name()).isEqualTo("Acme");
+            assertThat(franchise.name()).isEqualTo("Acme Coffee");
             assertThat(franchise.createdAt()).isEqualTo(CREATED);
             assertThat(franchise.updatedAt()).isEqualTo(CREATED);
-        }
-
-        @Test
-        void renameReturnsANewInstanceAndKeepsIdentity() {
-            Franchise original = new Franchise("f1", "Acme", CREATED, CREATED);
-
-            Franchise renamed = original.rename(" Acme Global ", LATER);
-
-            assertThat(renamed).isNotSameAs(original);
-            assertThat(renamed.id()).isEqualTo("f1");
-            assertThat(renamed.name()).isEqualTo("Acme Global");
-            assertThat(renamed.createdAt()).isEqualTo(CREATED);
-            assertThat(renamed.updatedAt()).isEqualTo(LATER);
-            assertThat(original.name()).isEqualTo("Acme");
         }
 
         @Test
@@ -59,15 +44,6 @@ class ModelTest {
             assertThat(branch.franchiseId()).isEqualTo("f1");
             assertThat(branch.name()).isEqualTo("Downtown");
             assertThat(branch.updatedAt()).isEqualTo(CREATED);
-        }
-
-        @Test
-        void renameOnlyChangesNameAndUpdatedAt() {
-            Branch branch = new Branch("b1", "f1", "Downtown", CREATED, CREATED);
-
-            Branch renamed = branch.rename("Uptown", LATER);
-
-            assertThat(renamed).isEqualTo(new Branch("b1", "f1", "Uptown", CREATED, LATER));
         }
 
         @Test
@@ -91,26 +67,8 @@ class ModelTest {
         }
 
         @Test
-        void withStockOnlyChangesStockAndUpdatedAt() {
-            Product product = new Product("p1", "b1", "Coffee", 10, CREATED, CREATED);
-
-            assertThat(product.withStock(0, LATER))
-                    .isEqualTo(new Product("p1", "b1", "Coffee", 0, CREATED, LATER));
-        }
-
-        @Test
-        void renameOnlyChangesNameAndUpdatedAt() {
-            Product product = new Product("p1", "b1", "Coffee", 10, CREATED, CREATED);
-
-            assertThat(product.rename("Tea", LATER))
-                    .isEqualTo(new Product("p1", "b1", "Tea", 10, CREATED, LATER));
-        }
-
-        @Test
         void rejectsNegativeStock() {
-            Product product = new Product("p1", "b1", "Coffee", 10, CREATED, CREATED);
-
-            assertThatThrownBy(() -> product.withStock(-5, LATER))
+            assertThatThrownBy(() -> Product.create("b1", "Coffee", -5, CREATED))
                     .isInstanceOf(DomainValidationException.class);
         }
 

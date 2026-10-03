@@ -1,6 +1,8 @@
 package com.franquix.franchises.application.usecase;
 
+import com.franquix.franchises.domain.exception.NotFoundException;
 import com.franquix.franchises.domain.model.Branch;
+import com.franquix.franchises.domain.model.DomainRules;
 import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
 import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import java.time.Clock;
@@ -20,8 +22,9 @@ public class RenameBranchService implements RenameBranchUseCase {
 
     @Override
     public Mono<Branch> rename(String franchiseId, String branchId, String newName) {
-        return hierarchy.requireBranch(franchiseId, branchId)
-                .map(branch -> branch.rename(newName, clock.instant()))
-                .flatMap(branches::save);
+        return Mono.fromCallable(() -> DomainRules.requireValidName("name", newName))
+                .flatMap(name -> hierarchy.requireFranchise(franchiseId)
+                        .flatMap(franchise -> branches.rename(branchId, franchise.id(), name, clock.instant()))
+                        .switchIfEmpty(Mono.error(() -> NotFoundException.branch(franchiseId, branchId))));
     }
 }
