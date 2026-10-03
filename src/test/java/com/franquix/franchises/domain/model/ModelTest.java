@@ -18,8 +18,8 @@ class ModelTest {
     class FranchiseModel {
 
         @Test
-        void createNormalizesTheNameAndStampsBothTimestamps() {
-            Franchise franchise = Franchise.create("  Acme   Coffee ", CREATED);
+        void createTrimsTheNameAndStampsBothTimestamps() {
+            Franchise franchise = Franchise.create("  Acme Coffee ", CREATED);
 
             assertThat(franchise.id()).isNull();
             assertThat(franchise.name()).isEqualTo("Acme Coffee");

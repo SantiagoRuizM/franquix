@@ -9,8 +9,8 @@ This provisions the persistence layer of Franquix on the **MongoDB Atlas free ti
 | `random_password` + `mongodbatlas_database_user` | Application user with `readWrite` on the `franquix` database only, scoped to the cluster |
 | `mongodbatlas_project_ip_access_list` | IP access list entries |
 
-The application runtime (Cloudflare Containers) is deployed with Wrangler, not Terraform. See the
-root [README](../README.md#deploy-to-cloudflare-containers).
+The application itself runs on Render from the Docker image; see the root
+[README](../README.md#deploy-to-render).
 
 ## Layout
 
@@ -53,11 +53,7 @@ terraform output                               # project, cluster and host
 terraform output -raw mongodb_uri              # full connection string (sensitive)
 ```
 
-Hand the connection string straight to the Cloudflare Worker as a secret, without writing it to disk:
-
-```bash
-terraform output -raw mongodb_uri | npx --prefix ../../../cloudflare wrangler secret put MONGODB_URI --config ../../../cloudflare/wrangler.jsonc
-```
+Paste that value into the `MONGODB_URI` environment variable of the Render service.
 
 Destroy everything (this deletes the data):
 
@@ -67,7 +63,7 @@ terraform destroy
 
 ## Decisions and trade-offs
 
-- **Open IP access list (`0.0.0.0/0`).** Cloudflare Containers have no static egress IP, and the
+- **Open IP access list (`0.0.0.0/0`).** The free Render plan has no static egress IP, and the
   M0 tier supports neither VPC peering nor private endpoints. So by default the cluster accepts
   connections from any address. Access still requires TLS and a 32-character random password
   for a user limited to one database. Override `allowed_cidr_blocks` if your runtime has a known
@@ -77,8 +73,8 @@ terraform destroy
   backend for teams.
 - **Credentials only from the environment.** The provider block is empty, and no credential is
   ever written to `*.tf` or `*.tfvars` files.
-- **Indexes are not managed here.** The application creates its unique and top-stock indexes
-  idempotently at startup (`MongoIndexInitializer`), so they also exist locally and in tests.
+- **Indexes are not managed here.** The unique name indexes are declared on the documents and
+  created by Spring Data at startup, so they also exist locally and in tests.
 
 ## Checks
 

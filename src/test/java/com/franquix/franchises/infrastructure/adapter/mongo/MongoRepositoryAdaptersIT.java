@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.model.Branch;
 import com.franquix.franchises.domain.model.Franchise;
-import com.franquix.franchises.domain.model.PageQuery;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
@@ -21,9 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.index.IndexInfo;
 import org.springframework.data.mongodb.core.query.Query;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -31,7 +29,6 @@ import reactor.test.StepVerifier;
 @DataMongoTest
 @Import({
         MongoTestcontainersConfiguration.class,
-        MongoIndexInitializer.class,
         MongoFranchiseRepositoryAdapter.class,
         MongoBranchRepositoryAdapter.class,
         MongoProductRepositoryAdapter.class
@@ -50,8 +47,6 @@ class MongoRepositoryAdaptersIT {
     private MongoBranchRepositoryAdapter branches;
     @Autowired
     private MongoProductRepositoryAdapter products;
-    @Autowired
-    private MongoIndexInitializer indexInitializer;
 
     @BeforeEach
     void cleanCollections() {
@@ -74,76 +69,13 @@ class MongoRepositoryAdaptersIT {
     }
 
     @Test
-    void createsTheUniqueAndTopStockIndexes() {
-        StepVerifier.create(template.indexOps(ProductDocument.COLLECTION).getIndexInfo()
-                        .map(info -> info.getName())
-                        .collectList())
-                .assertNext(names -> assertThat(names)
-                        .contains("ux_product_branch_name_ci", "ix_product_branch_top_stock")
-                        .doesNotContain("ux_product_branch_name"))
+    void declaresTheUniqueNameIndexes() {
+        StepVerifier.create(Flux.just(FranchiseDocument.COLLECTION, BranchDocument.COLLECTION, ProductDocument.COLLECTION)
+                        .concatMap(collection -> template.indexOps(collection).getIndexInfo())
+                        .filter(IndexInfo::isUnique)
+                        .count())
+                .expectNext(3L)
                 .verifyComplete();
-    }
-
-    @Test
-    void replacesTheLegacyCaseSensitiveIndexOnUpgrade() {
-        // a 1.0.0 database still has the case-sensitive unique index
-        template.indexOps(FranchiseDocument.COLLECTION).dropIndex("ux_franchise_name_ci").block();
-        template.indexOps(FranchiseDocument.COLLECTION).createIndex(new Index()
-                .on("name", Sort.Direction.ASC)
-                .unique()
-                .named("ux_franchise_name")).block();
-
-        indexInitializer.afterPropertiesSet();
-
-        StepVerifier.create(template.indexOps(FranchiseDocument.COLLECTION).getIndexInfo()
-                        .map(info -> info.getName())
-                        .collectList())
-                .assertNext(names -> assertThat(names)
-                        .contains("ux_franchise_name_ci")
-                        .doesNotContain("ux_franchise_name"))
-                .verifyComplete();
-    }
-
-    @Nested
-    class CaseInsensitiveNames {
-
-        @Test
-        void franchiseNamesDifferingOnlyInCaseCollide() {
-            saveFranchise("Acme");
-
-            StepVerifier.create(franchises.create(Franchise.create("ACME", NOW)))
-                    .expectError(DuplicateNameException.class)
-                    .verify();
-        }
-
-        @Test
-        void branchNamesDifferingOnlyInCaseCollideWithinAFranchise() {
-            Franchise franchise = saveFranchise("Acme");
-            saveBranch(franchise.id(), "Main");
-
-            StepVerifier.create(branches.create(Branch.create(franchise.id(), "main", NOW)))
-                    .expectError(DuplicateNameException.class)
-                    .verify();
-        }
-
-        @Test
-        void productNamesDifferingOnlyInCaseCollideWithinABranch() {
-            Branch branch = saveBranch(saveFranchise("Acme").id(), "Main");
-            saveProduct(branch.id(), "Coffee", 1);
-
-            StepVerifier.create(products.create(Product.create(branch.id(), "cOFFEE", 1, NOW)))
-                    .expectError(DuplicateNameException.class)
-                    .verify();
-        }
-
-        @Test
-        void accentsStillMakeNamesDistinct() {
-            saveFranchise("Cafe");
-
-            StepVerifier.create(franchises.create(Franchise.create("Café", NOW)))
-                    .expectNextCount(1)
-                    .verifyComplete();
-        }
     }
 
     @Nested
@@ -183,8 +115,8 @@ class MongoRepositoryAdaptersIT {
             saveFranchise("Acme");
             Franchise other = saveFranchise("Other");
 
-            StepVerifier.create(franchises.rename(other.id(), "acme", NOW))
-                    .expectErrorMessage("A franchise named 'acme' already exists")
+            StepVerifier.create(franchises.rename(other.id(), "Acme", NOW))
+                    .expectErrorMessage("A franchise named 'Acme' already exists")
                     .verify();
         }
 
@@ -204,23 +136,6 @@ class MongoRepositoryAdaptersIT {
             StepVerifier.create(franchises.rename(saved.id(), "Acme", NOW))
                     .expectNextCount(1)
                     .verifyComplete();
-        }
-
-        @Test
-        void findPageReturnsFranchisesSortedByNameWithSkipAndLimit() {
-            saveFranchise("Delta");
-            saveFranchise("Alpha");
-            saveFranchise("Charlie");
-            saveFranchise("Bravo");
-
-            StepVerifier.create(franchises.findPage(new PageQuery(0, 3)).map(Franchise::name))
-                    .expectNext("Alpha", "Bravo", "Charlie")
-                    .verifyComplete();
-            StepVerifier.create(franchises.findPage(new PageQuery(1, 3)).map(Franchise::name))
-                    .expectNext("Delta")
-                    .verifyComplete();
-            StepVerifier.create(franchises.findPage(new PageQuery(5, 3))).verifyComplete();
-            StepVerifier.create(franchises.count()).expectNext(4L).verifyComplete();
         }
 
         @Test
@@ -302,7 +217,7 @@ class MongoRepositoryAdaptersIT {
             saveBranch(acme.id(), "Downtown");
             Branch uptown = saveBranch(acme.id(), "Uptown");
 
-            StepVerifier.create(branches.rename(uptown.id(), acme.id(), "DOWNTOWN", NOW))
+            StepVerifier.create(branches.rename(uptown.id(), acme.id(), "Downtown", NOW))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -425,8 +340,8 @@ class MongoRepositoryAdaptersIT {
             saveProduct(branch.id(), "Coffee", 5);
             Product tea = saveProduct(branch.id(), "Tea", 1);
 
-            StepVerifier.create(products.rename(tea.id(), branch.id(), "coffee", NOW))
-                    .expectErrorMessage("A product named 'coffee' already exists in this branch")
+            StepVerifier.create(products.rename(tea.id(), branch.id(), "Coffee", NOW))
+                    .expectErrorMessage("A product named 'Coffee' already exists in this branch")
                     .verify();
         }
 

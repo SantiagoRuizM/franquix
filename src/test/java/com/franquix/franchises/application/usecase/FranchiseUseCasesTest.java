@@ -96,11 +96,11 @@ class FranchiseUseCasesTest {
         }
 
         @Test
-        void renamesAtomicallyWithTheNormalizedName() {
+        void renamesAtomicallyWithTheTrimmedName() {
             Franchise renamed = new Franchise(FRANCHISE_ID, "Acme Global", CREATED, NOW);
             when(franchises.rename(FRANCHISE_ID, "Acme Global", NOW)).thenReturn(Mono.just(renamed));
 
-            StepVerifier.create(useCase.rename(FRANCHISE_ID, "  Acme   Global "))
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, "  Acme Global "))
                     .expectNext(renamed)
                     .verifyComplete();
         }

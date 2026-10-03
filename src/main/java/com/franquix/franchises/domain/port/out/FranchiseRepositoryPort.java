@@ -1,9 +1,7 @@
 package com.franquix.franchises.domain.port.out;
 
 import com.franquix.franchises.domain.model.Franchise;
-import com.franquix.franchises.domain.model.PageQuery;
 import java.time.Instant;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /** Persistence port for franchises. */
@@ -27,10 +25,4 @@ public interface FranchiseRepositoryPort {
 
     /** @return the franchise, or an empty {@link Mono} when it does not exist */
     Mono<Franchise> findById(String franchiseId);
-
-    /** @return the requested page of franchises, ordered by name then id */
-    Flux<Franchise> findPage(PageQuery query);
-
-    /** @return the total number of franchises */
-    Mono<Long> count();
 }

@@ -3,9 +3,11 @@
 
 @host = http://localhost:8080
 @api = {{host}}/api/v1/franchises
+@token = local-dev-token
 
 ### 1. Create a franchise
 POST {{api}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Acme Coffee" }
@@ -14,6 +16,7 @@ Content-Type: application/json
 
 ### 4. Add branch "Centro"
 POST {{api}}/{{franchiseId}}/branches
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Centro" }
@@ -22,6 +25,7 @@ Content-Type: application/json
 
 ### 4. Add branch "Norte"
 POST {{api}}/{{franchiseId}}/branches
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Norte" }
@@ -30,6 +34,7 @@ Content-Type: application/json
 
 ### 6. Add product to Centro
 POST {{api}}/{{franchiseId}}/branches/{{centroId}}/products
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Coffee", "stock": 120 }
@@ -38,63 +43,75 @@ Content-Type: application/json
 
 ### 6. Add another product to Centro
 POST {{api}}/{{franchiseId}}/branches/{{centroId}}/products
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Tea", "stock": 40 }
 
 ### 6. Add product to Norte
 POST {{api}}/{{franchiseId}}/branches/{{norteId}}/products
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Bagel", "stock": 85 }
 
 ### 10. Top-stock product per branch
 GET {{api}}/{{franchiseId}}/branches/top-stock-products
+Authorization: Bearer {{token}}
 
 ### 7. Update stock
 PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}/stock
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "stock": 15 }
 
 ### 8. Rename product
 PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}/name
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Espresso" }
 
 ### 5. Rename branch
 PATCH {{api}}/{{franchiseId}}/branches/{{centroId}}/name
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Downtown" }
 
 ### 3. Rename franchise
 PATCH {{api}}/{{franchiseId}}/name
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Acme Coffee Global" }
 
 ### 2. Whole tree
 GET {{api}}/{{franchiseId}}
+Authorization: Bearer {{token}}
 
 ### 9. Delete product
 DELETE {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}
+Authorization: Bearer {{token}}
 
 ### Errors: 409 duplicate franchise
 POST {{api}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "Acme Coffee Global" }
 
 ### Errors: 400 validation
 POST {{api}}/{{franchiseId}}/branches/{{norteId}}/products
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": " ", "stock": -1 }
 
 ### Errors: 400 malformed id
 GET {{api}}/not-an-id
+Authorization: Bearer {{token}}
 
 ### Health
 GET {{host}}/actuator/health

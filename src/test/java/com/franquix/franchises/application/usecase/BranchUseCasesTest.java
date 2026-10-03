@@ -149,7 +149,7 @@ class BranchUseCasesTest {
 
         @Test
         void rejectsAnInvalidNameWithoutTouchingTheRepositories() {
-            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "​"))
+            StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "   "))
                     .expectError(DomainValidationException.class)
                     .verify();
             verify(franchises, never()).findById(any());

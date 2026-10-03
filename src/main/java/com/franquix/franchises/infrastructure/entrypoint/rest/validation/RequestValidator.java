@@ -42,23 +42,6 @@ public class RequestValidator {
         return value;
     }
 
-    /**
-     * @return the query parameter as an int, or the default when absent
-     * @throws RequestValidationException when present but not an integer
-     */
-    public int intQueryParam(ServerRequest request, String name, int defaultValue) {
-        return request.queryParam(name)
-                .map(value -> {
-                    try {
-                        return Integer.parseInt(value.strip());
-                    } catch (NumberFormatException e) {
-                        throw new RequestValidationException(
-                                "Invalid query parameter '%s'".formatted(name), Map.of(name, "must be an integer"));
-                    }
-                })
-                .orElse(defaultValue);
-    }
-
     private <T> Mono<T> validate(T body) {
         Set<ConstraintViolation<T>> violations = validator.validate(body);
         if (violations.isEmpty()) {

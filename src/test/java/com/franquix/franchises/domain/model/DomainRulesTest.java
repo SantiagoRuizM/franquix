@@ -48,39 +48,6 @@ class DomainRulesTest {
         assertThat(DomainRules.requireValidName("name", name)).hasSize(DomainRules.NAME_MAX_LENGTH);
     }
 
-    @Test
-    void requireValidNameCollapsesInnerWhitespace() {
-        assertThat(DomainRules.requireValidName("name", "Coffee \t  House")).isEqualTo("Coffee House");
-    }
-
-    @Test
-    void requireValidNameNormalizesToNfc() {
-        String decomposed = "Café"; // "e" followed by a combining acute accent
-        assertThat(DomainRules.requireValidName("name", decomposed)).isEqualTo("Café");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"​", "Coffee​House", "Tea\u0000", "A‮B", "﻿Name", "Name\u0007"})
-    void requireValidNameRejectsInvisibleAndControlCharacters(String value) {
-        assertThatThrownBy(() -> DomainRules.requireValidName("name", value))
-                .isInstanceOf(DomainValidationException.class)
-                .hasMessage("name must not contain invisible or control characters");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"-", "!!!", "..."})
-    void requireValidNameNeedsALetterOrDigit(String value) {
-        assertThatThrownBy(() -> DomainRules.requireValidName("name", value))
-                .isInstanceOf(DomainValidationException.class)
-                .hasMessage("name must contain at least one letter or digit");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"Café Ñandú", "北京店", "Store 24/7", "7-Eleven"})
-    void requireValidNameAcceptsInternationalNames(String value) {
-        assertThat(DomainRules.requireValidName("name", value)).isEqualTo(value);
-    }
-
     @ParameterizedTest
     @ValueSource(ints = {0, 1, Integer.MAX_VALUE})
     void requireValidStockAcceptsZeroAndPositiveValues(int stock) {

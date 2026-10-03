@@ -2,21 +2,14 @@ name: CI
 
 on:
   push:
-    # main is covered by deploy.yml, which runs this workflow before deploying
-    branches-ignore: [main]
   pull_request:
-  workflow_call:
 
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  backend:
-    name: Build, tests and coverage
+  build:
+    name: Build and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -28,55 +21,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # Unit, slice and Testcontainers tests (Docker is available on the runner),
-      # BlockHound, ArchUnit and the JaCoCo >= 80 % gate
+      # unit, web slice and Testcontainers tests (Docker is available on the runner) + JaCoCo >= 80 %
       - name: Build
         run: ./gradlew build --no-daemon
 
-      - name: Upload test and coverage reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: reports
-          path: |
-            build/reports/tests/test
-            build/reports/jacoco/test/html
-          retention-days: 14
-
-  terraform:
-    name: Terraform checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
       - uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: "~1.16"
 
-      - name: Format
-        run: terraform fmt -recursive -check infra
-
-      - name: Validate
-        working-directory: infra/envs/prod
+      - name: Terraform format and validate
         run: |
-          terraform init -backend=false -input=false
-          terraform validate
-
-  worker:
-    name: Cloudflare Worker checks
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: cloudflare
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: cloudflare/package-lock.json
-
-      - run: npm ci
-      - run: npm run typegen
-      - run: npm run typecheck
+          terraform fmt -recursive -check infra
+          terraform -chdir=infra/envs/prod init -backend=false -input=false
+          terraform -chdir=infra/envs/prod validate
