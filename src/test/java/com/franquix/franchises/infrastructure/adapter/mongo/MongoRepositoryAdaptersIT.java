@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Query;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -47,6 +49,8 @@ class MongoRepositoryAdaptersIT {
     private MongoBranchRepositoryAdapter branches;
     @Autowired
     private MongoProductRepositoryAdapter products;
+    @Autowired
+    private MongoIndexInitializer indexInitializer;
 
     @BeforeEach
     void cleanCollections() {
@@ -74,8 +78,71 @@ class MongoRepositoryAdaptersIT {
                         .map(info -> info.getName())
                         .collectList())
                 .assertNext(names -> assertThat(names)
-                        .contains("ux_product_branch_name", "ix_product_branch_top_stock"))
+                        .contains("ux_product_branch_name_ci", "ix_product_branch_top_stock")
+                        .doesNotContain("ux_product_branch_name"))
                 .verifyComplete();
+    }
+
+    @Test
+    void replacesTheLegacyCaseSensitiveIndexOnUpgrade() {
+        // a 1.0.0 database still has the case-sensitive unique index
+        template.indexOps(FranchiseDocument.COLLECTION).dropIndex("ux_franchise_name_ci").block();
+        template.indexOps(FranchiseDocument.COLLECTION).createIndex(new Index()
+                .on("name", Sort.Direction.ASC)
+                .unique()
+                .named("ux_franchise_name")).block();
+
+        indexInitializer.afterPropertiesSet();
+
+        StepVerifier.create(template.indexOps(FranchiseDocument.COLLECTION).getIndexInfo()
+                        .map(info -> info.getName())
+                        .collectList())
+                .assertNext(names -> assertThat(names)
+                        .contains("ux_franchise_name_ci")
+                        .doesNotContain("ux_franchise_name"))
+                .verifyComplete();
+    }
+
+    @Nested
+    class CaseInsensitiveNames {
+
+        @Test
+        void franchiseNamesDifferingOnlyInCaseCollide() {
+            saveFranchise("Acme");
+
+            StepVerifier.create(franchises.save(Franchise.create("ACME", NOW)))
+                    .expectError(DuplicateNameException.class)
+                    .verify();
+        }
+
+        @Test
+        void branchNamesDifferingOnlyInCaseCollideWithinAFranchise() {
+            Franchise franchise = saveFranchise("Acme");
+            saveBranch(franchise.id(), "Main");
+
+            StepVerifier.create(branches.save(Branch.create(franchise.id(), "main", NOW)))
+                    .expectError(DuplicateNameException.class)
+                    .verify();
+        }
+
+        @Test
+        void productNamesDifferingOnlyInCaseCollideWithinABranch() {
+            Branch branch = saveBranch(saveFranchise("Acme").id(), "Main");
+            saveProduct(branch.id(), "Coffee", 1);
+
+            StepVerifier.create(products.save(Product.create(branch.id(), "cOFFEE", 1, NOW)))
+                    .expectError(DuplicateNameException.class)
+                    .verify();
+        }
+
+        @Test
+        void accentsStillMakeNamesDistinct() {
+            saveFranchise("Cafe");
+
+            StepVerifier.create(franchises.save(Franchise.create("Café", NOW)))
+                    .expectNextCount(1)
+                    .verifyComplete();
+        }
     }
 
     @Nested
