@@ -21,6 +21,7 @@ repositories {
 
 val springdocVersion = "2.8.17"
 val archunitVersion = "1.5.1"
+val blockhoundVersion = "1.0.17.RELEASE"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -35,6 +36,8 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mongodb")
     testImplementation("com.tngtech.archunit:archunit-junit5:$archunitVersion")
+    // Installs BlockHound for every test: any blocking call on a reactive thread fails the test
+    testImplementation("io.projectreactor.tools:blockhound-junit-platform:$blockhoundVersion")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -45,6 +48,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+    // BlockHound instruments JDK classes; JDK 13+ needs this flag to allow it
+    jvmArgs("-XX:+AllowRedefinitionToAddDeleteMethods")
     finalizedBy(tasks.jacocoTestReport)
 }
 
