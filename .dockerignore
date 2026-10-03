@@ -1,0 +1,9 @@
+# Keep the Docker build context to what the build stage copies
+*
+!gradlew
+!gradle/
+!settings.gradle.kts
+!build.gradle.kts
+!gradle.properties
+!src/
+src/test/

@@ -1,0 +1,36 @@
+# Local stack: the API plus a MongoDB with a persistent volume.
+#   docker compose up --build      -> API on http://localhost:8080
+#   docker compose down -v         -> stop and wipe the data
+name: franquix
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build: .
+    image: franquix:local
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MONGODB_URI: mongodb://mongo:27017/franquix
+      MONGODB_DATABASE: franquix
+    ports:
+      - "8080:8080"
+
+volumes:
+  mongo-data:
