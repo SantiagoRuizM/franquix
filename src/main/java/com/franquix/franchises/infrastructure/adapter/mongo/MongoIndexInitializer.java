@@ -77,7 +77,11 @@ public class MongoIndexInitializer implements InitializingBean {
                                 .on("branchId", Sort.Direction.ASC)
                                 .on("stock", Sort.Direction.DESC)
                                 .on("name", Sort.Direction.ASC)
-                                .named("ix_product_branch_top_stock")))
+                                .named("ix_product_branch_top_stock")),
+                        create(FranchiseDocument.COLLECTION, new Index()
+                                .on("name", Sort.Direction.ASC)
+                                .on("_id", Sort.Direction.ASC)
+                                .named("ix_franchise_name_id")))
                 .doOnNext(name -> log.info("MongoDB index ready: {}", name))
                 .then();
     }

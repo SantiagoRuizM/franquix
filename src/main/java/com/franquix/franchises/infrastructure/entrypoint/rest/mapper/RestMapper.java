@@ -5,9 +5,11 @@ import com.franquix.franchises.domain.model.BranchOverview;
 import com.franquix.franchises.domain.model.BranchTopProduct;
 import com.franquix.franchises.domain.model.Franchise;
 import com.franquix.franchises.domain.model.FranchiseOverview;
+import com.franquix.franchises.domain.model.PageResult;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.BranchResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseDetailResponse;
+import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchisePageResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.ProductResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.TopStockProductResponse;
@@ -36,6 +38,12 @@ public final class RestMapper {
     public static TopStockProductResponse toResponse(BranchTopProduct top) {
         return new TopStockProductResponse(
                 top.branchId(), top.branchName(), top.productId(), top.productName(), top.stock());
+    }
+
+    public static FranchisePageResponse toResponse(PageResult<Franchise> page) {
+        return new FranchisePageResponse(
+                page.items().stream().map(RestMapper::toResponse).toList(),
+                page.page(), page.size(), page.totalElements(), page.totalPages());
     }
 
     public static FranchiseDetailResponse toResponse(FranchiseOverview overview) {

@@ -212,6 +212,24 @@ class FranquixApiE2EIT {
     }
 
     @Test
+    void listPagesThroughFranchisesInNameOrder() {
+        createFranchise(unique("List A"));
+        createFranchise(unique("List B"));
+
+        client.get().uri(BASE + "?size=1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.items.length()").isEqualTo(1)
+                .jsonPath("$.size").isEqualTo(1)
+                .jsonPath("$.totalElements").value(total -> assertThat(((Number) total).longValue()).isGreaterThanOrEqualTo(2))
+                .jsonPath("$.totalPages").value(pages -> assertThat(((Number) pages).longValue()).isGreaterThanOrEqualTo(2));
+        client.get().uri(BASE + "?size=500")
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
     void healthAndOpenApiAreExposed() {
         client.get().uri("/actuator/health")
                 .exchange()

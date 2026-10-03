@@ -12,10 +12,14 @@ import com.franquix.franchises.domain.model.BranchOverview;
 import com.franquix.franchises.domain.model.BranchTopProduct;
 import com.franquix.franchises.domain.model.Franchise;
 import com.franquix.franchises.domain.model.FranchiseOverview;
+import com.franquix.franchises.domain.model.PageQuery;
+import com.franquix.franchises.domain.model.PageResult;
 import com.franquix.franchises.domain.model.Product;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -100,6 +104,43 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .expectBody()
                 .jsonPath("$.title").isEqualTo("Conflict")
                 .jsonPath("$.detail").isEqualTo("A franchise named 'Acme' already exists");
+    }
+
+    @Test
+    void listUsesDefaultPagingAndReturnsTotals() {
+        when(listFranchises.list(new PageQuery(0, 20)))
+                .thenReturn(Mono.just(new PageResult<>(List.of(ACME), 0, 20, 21)));
+
+        client.get().uri(BASE)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.items[0].name").isEqualTo("Acme")
+                .jsonPath("$.page").isEqualTo(0)
+                .jsonPath("$.size").isEqualTo(20)
+                .jsonPath("$.totalElements").isEqualTo(21)
+                .jsonPath("$.totalPages").isEqualTo(2);
+    }
+
+    @Test
+    void listHonoursExplicitPaging() {
+        when(listFranchises.list(new PageQuery(2, 5)))
+                .thenReturn(Mono.just(new PageResult<>(List.of(), 2, 5, 3)));
+
+        client.get().uri(BASE + "?page=2&size=5")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.items").isEmpty();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"page=-1", "size=0", "size=101", "page=abc", "size=1.5", "page="})
+    void listRejectsInvalidPaging(String query) {
+        client.get().uri(BASE + "?" + query)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON);
+        verifyNoInteractions(listFranchises);
     }
 
     @Test
