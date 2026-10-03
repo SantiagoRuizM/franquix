@@ -7,6 +7,7 @@ import com.franquix.franchises.application.usecase.DeleteProductService;
 import com.franquix.franchises.application.usecase.GetFranchiseService;
 import com.franquix.franchises.application.usecase.GetTopStockProductsService;
 import com.franquix.franchises.application.usecase.HierarchyResolver;
+import com.franquix.franchises.application.usecase.ListFranchisesService;
 import com.franquix.franchises.application.usecase.RenameBranchService;
 import com.franquix.franchises.application.usecase.RenameFranchiseService;
 import com.franquix.franchises.application.usecase.RenameProductService;
@@ -17,6 +18,7 @@ import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
 import com.franquix.franchises.domain.port.in.GetFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
+import com.franquix.franchises.domain.port.in.ListFranchisesUseCase;
 import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.RenameProductUseCase;
@@ -50,6 +52,11 @@ public class UseCaseConfig {
     @Bean
     CreateFranchiseUseCase createFranchiseUseCase(FranchiseRepositoryPort franchises, Clock clock) {
         return new CreateFranchiseService(franchises, clock);
+    }
+
+    @Bean
+    ListFranchisesUseCase listFranchisesUseCase(FranchiseRepositoryPort franchises) {
+        return new ListFranchisesService(franchises);
     }
 
     @Bean

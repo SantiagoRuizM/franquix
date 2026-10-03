@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.model.Branch;
 import com.franquix.franchises.domain.model.Franchise;
+import com.franquix.franchises.domain.model.PageQuery;
 import com.franquix.franchises.domain.model.Product;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
@@ -203,6 +204,23 @@ class MongoRepositoryAdaptersIT {
             StepVerifier.create(franchises.rename(saved.id(), "Acme", NOW))
                     .expectNextCount(1)
                     .verifyComplete();
+        }
+
+        @Test
+        void findPageReturnsFranchisesSortedByNameWithSkipAndLimit() {
+            saveFranchise("Delta");
+            saveFranchise("Alpha");
+            saveFranchise("Charlie");
+            saveFranchise("Bravo");
+
+            StepVerifier.create(franchises.findPage(new PageQuery(0, 3)).map(Franchise::name))
+                    .expectNext("Alpha", "Bravo", "Charlie")
+                    .verifyComplete();
+            StepVerifier.create(franchises.findPage(new PageQuery(1, 3)).map(Franchise::name))
+                    .expectNext("Delta")
+                    .verifyComplete();
+            StepVerifier.create(franchises.findPage(new PageQuery(5, 3))).verifyComplete();
+            StepVerifier.create(franchises.count()).expectNext(4L).verifyComplete();
         }
 
         @Test

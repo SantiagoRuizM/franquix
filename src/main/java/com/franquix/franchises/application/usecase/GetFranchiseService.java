@@ -11,6 +11,9 @@ import reactor.core.publisher.Mono;
 
 public class GetFranchiseService implements GetFranchiseUseCase {
 
+    /** Caps the per-branch queries a single request runs at once, protecting the connection pool. */
+    private static final int BRANCH_LOOKUP_CONCURRENCY = 8;
+
     private final HierarchyResolver hierarchy;
     private final BranchRepositoryPort branches;
     private final ProductRepositoryPort products;
@@ -30,7 +33,7 @@ public class GetFranchiseService implements GetFranchiseUseCase {
     private Mono<FranchiseOverview> loadTree(Franchise franchise) {
         return branches.findByFranchiseId(franchise.id())
                 // flatMapSequential queries branches concurrently but keeps their name order
-                .flatMapSequential(this::loadBranch)
+                .flatMapSequential(this::loadBranch, BRANCH_LOOKUP_CONCURRENCY)
                 .collectList()
                 .map(branchOverviews -> new FranchiseOverview(franchise, branchOverviews));
     }

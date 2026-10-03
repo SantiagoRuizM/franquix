@@ -1,8 +1,10 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.handler;
 
 import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
+import com.franquix.franchises.domain.model.PageQuery;
 import com.franquix.franchises.domain.port.in.GetFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
+import com.franquix.franchises.domain.port.in.ListFranchisesUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.mapper.RestMapper;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Mono;
 public class FranchiseHandler {
 
     private final CreateFranchiseUseCase createFranchise;
+    private final ListFranchisesUseCase listFranchises;
     private final GetFranchiseUseCase getFranchise;
     private final RenameFranchiseUseCase renameFranchise;
     private final GetTopStockProductsUseCase getTopStockProducts;
@@ -24,11 +27,13 @@ public class FranchiseHandler {
 
     public FranchiseHandler(
             CreateFranchiseUseCase createFranchise,
+            ListFranchisesUseCase listFranchises,
             GetFranchiseUseCase getFranchise,
             RenameFranchiseUseCase renameFranchise,
             GetTopStockProductsUseCase getTopStockProducts,
             RequestValidator validator) {
         this.createFranchise = createFranchise;
+        this.listFranchises = listFranchises;
         this.getFranchise = getFranchise;
         this.renameFranchise = renameFranchise;
         this.getTopStockProducts = getTopStockProducts;
@@ -42,6 +47,16 @@ public class FranchiseHandler {
                         .created(request.uriBuilder().path("/{id}").build(franchise.id()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(RestMapper.toResponse(franchise)));
+    }
+
+    public Mono<ServerResponse> list(ServerRequest request) {
+        return Mono.fromCallable(() -> new PageQuery(
+                        validator.intQueryParam(request, "page", 0),
+                        validator.intQueryParam(request, "size", PageQuery.DEFAULT_SIZE)))
+                .flatMap(listFranchises::list)
+                .flatMap(page -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(RestMapper.toResponse(page)));
     }
 
     public Mono<ServerResponse> get(ServerRequest request) {
