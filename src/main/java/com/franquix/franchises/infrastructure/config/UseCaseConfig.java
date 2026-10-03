@@ -25,6 +25,7 @@ import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
 import java.time.Clock;
+import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,9 +36,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class UseCaseConfig {
 
+    /** Millisecond ticks: MongoDB stores millisecond precision, so responses match what is persisted. */
     @Bean
     Clock clock() {
-        return Clock.systemUTC();
+        return Clock.tick(Clock.systemUTC(), Duration.ofMillis(1));
     }
 
     @Bean
