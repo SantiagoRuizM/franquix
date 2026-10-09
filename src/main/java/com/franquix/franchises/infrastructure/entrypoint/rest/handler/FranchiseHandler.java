@@ -1,7 +1,6 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.handler;
 
 import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
-import com.franquix.franchises.domain.port.in.GetFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
@@ -17,19 +16,16 @@ import reactor.core.publisher.Mono;
 public class FranchiseHandler {
 
     private final CreateFranchiseUseCase createFranchise;
-    private final GetFranchiseUseCase getFranchise;
     private final RenameFranchiseUseCase renameFranchise;
     private final GetTopStockProductsUseCase getTopStockProducts;
     private final RequestValidator validator;
 
     public FranchiseHandler(
             CreateFranchiseUseCase createFranchise,
-            GetFranchiseUseCase getFranchise,
             RenameFranchiseUseCase renameFranchise,
             GetTopStockProductsUseCase getTopStockProducts,
             RequestValidator validator) {
         this.createFranchise = createFranchise;
-        this.getFranchise = getFranchise;
         this.renameFranchise = renameFranchise;
         this.getTopStockProducts = getTopStockProducts;
         this.validator = validator;
@@ -42,13 +38,6 @@ public class FranchiseHandler {
                         .created(request.uriBuilder().path("/{id}").build(franchise.id()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(RestMapper.toResponse(franchise)));
-    }
-
-    public Mono<ServerResponse> get(ServerRequest request) {
-        return Mono.defer(() -> getFranchise.get(validator.objectId(request, PathVariables.FRANCHISE_ID)))
-                .flatMap(overview -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(RestMapper.toResponse(overview)));
     }
 
     public Mono<ServerResponse> rename(ServerRequest request) {

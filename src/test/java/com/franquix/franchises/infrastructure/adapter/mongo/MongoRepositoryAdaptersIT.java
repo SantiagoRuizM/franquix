@@ -246,17 +246,6 @@ class MongoRepositoryAdaptersIT {
         }
 
         @Test
-        void findByBranchIdReturnsProductsSortedByName() {
-            saveProduct(branch.id(), "Tea", 1);
-            saveProduct(branch.id(), "Coffee", 2);
-
-            StepVerifier.create(products.findByBranchId(branch.id()).map(Product::name))
-                    .expectNext("Coffee", "Tea")
-                    .verifyComplete();
-            StepVerifier.create(products.findByBranchId("bad")).verifyComplete();
-        }
-
-        @Test
         void findTopStockReturnsTheHighestStockAndBreaksTiesByName() {
             saveProduct(branch.id(), "Tea", 50);
             saveProduct(branch.id(), "Coffee", 80);

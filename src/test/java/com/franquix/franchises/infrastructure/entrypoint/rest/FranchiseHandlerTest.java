@@ -7,13 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.exception.NotFoundException;
-import com.franquix.franchises.domain.model.Branch;
-import com.franquix.franchises.domain.model.BranchOverview;
 import com.franquix.franchises.domain.model.BranchTopProduct;
 import com.franquix.franchises.domain.model.Franchise;
-import com.franquix.franchises.domain.model.FranchiseOverview;
-import com.franquix.franchises.domain.model.Product;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -100,47 +95,6 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .expectBody()
                 .jsonPath("$.title").isEqualTo("Conflict")
                 .jsonPath("$.detail").isEqualTo("A franchise named 'Acme' already exists");
-    }
-
-    @Test
-    void getReturnsTheWholeTree() {
-        Branch branch = new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW);
-        Product product = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 7, NOW, NOW);
-        when(getFranchise.get(FRANCHISE_ID)).thenReturn(Mono.just(
-                new FranchiseOverview(ACME, List.of(new BranchOverview(branch, List.of(product))))));
-
-        client.get().uri(BASE + "/{id}", FRANCHISE_ID)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.name").isEqualTo("Acme")
-                .jsonPath("$.branches[0].name").isEqualTo("Downtown")
-                .jsonPath("$.branches[0].products[0].name").isEqualTo("Coffee")
-                .jsonPath("$.branches[0].products[0].stock").isEqualTo(7);
-    }
-
-    @Test
-    void getRejectsAMalformedId() {
-        client.get().uri(BASE + "/{id}", "not-an-id")
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.detail").isEqualTo("Invalid franchiseId 'not-an-id'")
-                .jsonPath("$.errors.franchiseId").exists();
-        verifyNoInteractions(getFranchise);
-    }
-
-    @Test
-    void getMapsMissingFranchisesTo404() {
-        when(getFranchise.get(FRANCHISE_ID)).thenReturn(Mono.error(NotFoundException.franchise(FRANCHISE_ID)));
-
-        client.get().uri(BASE + "/{id}", FRANCHISE_ID)
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectBody()
-                .jsonPath("$.title").isEqualTo("Not Found")
-                .jsonPath("$.detail").isEqualTo("Franchise '" + FRANCHISE_ID + "' not found")
-                .jsonPath("$.instance").isEqualTo(BASE + "/" + FRANCHISE_ID);
     }
 
     @Test

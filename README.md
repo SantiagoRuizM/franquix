@@ -78,7 +78,6 @@ Base path: `/api/v1/franchises`. Every request needs `Authorization: Bearer <API
 | Method | Path | Body | Success |
 |---|---|---|---|
 | POST | `/franchises` | `{"name"}` | 201 |
-| GET | `/franchises/{franchiseId}` | – | 200 (whole tree) |
 | PATCH | `/franchises/{franchiseId}/name` | `{"name"}` | 200 |
 | POST | `/franchises/{franchiseId}/branches` | `{"name"}` | 201 |
 | PATCH | `/franchises/{franchiseId}/branches/{branchId}/name` | `{"name"}` | 200 |
@@ -117,7 +116,6 @@ curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE/stock -H "$AU
 curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE/name -H "$AUTH" -H "$JSON" -d '{"name":"Espresso"}'
 curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/name -H "$AUTH" -H "$JSON" -d '{"name":"Downtown"}'
 curl -s -X PATCH $API/$FRANCHISE/name -H "$AUTH" -H "$JSON" -d '{"name":"Acme Coffee Global"}'
-curl -s $API/$FRANCHISE -H "$AUTH"                                    # whole tree
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE -H "$AUTH"
 ```
 

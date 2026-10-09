@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 class GlobalErrorHandlerTest extends RestTestSupport {
 
@@ -33,10 +33,10 @@ class GlobalErrorHandlerTest extends RestTestSupport {
 
     @Test
     void unexpectedErrorsBecomeA500WithoutInternals() {
-        when(getFranchise.get(FRANCHISE_ID))
-                .thenReturn(Mono.error(new IllegalStateException("connection pool exhausted at db-01:27017")));
+        when(getTopStockProducts.getTopStockProducts(FRANCHISE_ID))
+                .thenReturn(Flux.error(new IllegalStateException("connection pool exhausted at db-01:27017")));
 
-        client.get().uri(BASE + "/{id}", FRANCHISE_ID)
+        client.get().uri(BASE + "/{id}/branches/top-stock-products", FRANCHISE_ID)
                 .exchange()
                 .expectStatus().is5xxServerError()
                 .expectBody()

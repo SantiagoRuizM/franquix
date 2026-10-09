@@ -35,11 +35,11 @@ class SecurityAccessTest extends RestTestSupport {
     @ParameterizedTest(name = "Authorization: {0}")
     @ValueSource(strings = {"Bearer wrong-token", "Bearer ", "local-dev-token", "Basic bG9jYWw6ZGV2"})
     void wrongOrMalformedTokensAreRejected(String authorization) {
-        anonymous.get().uri(BASE + "/{id}", FRANCHISE_ID)
+        anonymous.get().uri(BASE + "/{id}/branches/top-stock-products", FRANCHISE_ID)
                 .header(HttpHeaders.AUTHORIZATION, authorization)
                 .exchange()
                 .expectStatus().isUnauthorized();
-        verifyNoInteractions(getFranchise);
+        verifyNoInteractions(getTopStockProducts);
     }
 
     @Test

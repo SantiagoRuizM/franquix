@@ -4,7 +4,6 @@ import com.franquix.franchises.domain.port.in.AddBranchUseCase;
 import com.franquix.franchises.domain.port.in.AddProductUseCase;
 import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
-import com.franquix.franchises.domain.port.in.GetFranchiseUseCase;
 import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
 import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
 import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
@@ -64,8 +63,6 @@ public abstract class RestTestSupport {
 
     @MockitoBean
     protected CreateFranchiseUseCase createFranchise;
-    @MockitoBean
-    protected GetFranchiseUseCase getFranchise;
     @MockitoBean
     protected RenameFranchiseUseCase renameFranchise;
     @MockitoBean

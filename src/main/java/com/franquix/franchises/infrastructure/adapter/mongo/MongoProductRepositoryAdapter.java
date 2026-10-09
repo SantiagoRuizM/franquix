@@ -11,7 +11,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -51,15 +50,6 @@ public class MongoProductRepositoryAdapter implements ProductRepositoryPort {
             return Mono.empty();
         }
         return repository.findByIdAndBranchId(productId, branchId)
-                .map(MongoDocumentMapper::toDomain);
-    }
-
-    @Override
-    public Flux<Product> findByBranchId(String branchId) {
-        if (!ObjectIds.allValid(branchId)) {
-            return Flux.empty();
-        }
-        return repository.findByBranchIdOrderByNameAsc(branchId)
                 .map(MongoDocumentMapper::toDomain);
     }
 
