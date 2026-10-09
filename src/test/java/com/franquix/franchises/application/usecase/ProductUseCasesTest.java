@@ -1,10 +1,7 @@
 package com.franquix.franchises.application.usecase;
 
 import static com.franquix.franchises.application.usecase.Fixtures.BRANCH_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.CLOCK;
-import static com.franquix.franchises.application.usecase.Fixtures.CREATED;
 import static com.franquix.franchises.application.usecase.Fixtures.FRANCHISE_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.NOW;
 import static com.franquix.franchises.application.usecase.Fixtures.PRODUCT_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -55,13 +52,13 @@ class ProductUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new ProductService(franchises, branches, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products);
         }
 
         @Test
         void createsANewProductUnderTheBranch() {
-            Product toCreate = new Product(null, BRANCH_ID, "Coffee", 25, NOW, NOW);
-            Product created = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 25, NOW, NOW);
+            Product toCreate = new Product(null, BRANCH_ID, "Coffee", 25);
+            Product created = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 25);
             givenBranchExists();
             when(products.create(toCreate)).thenReturn(Mono.just(created));
 
@@ -108,7 +105,7 @@ class ProductUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new ProductService(franchises, branches, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products);
         }
 
         @Test
@@ -148,14 +145,14 @@ class ProductUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new ProductService(franchises, branches, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products);
         }
 
         @Test
         void updatesTheStockAtomically() {
-            Product updated = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 99, CREATED, NOW);
+            Product updated = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 99);
             givenBranchExists();
-            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 99, NOW)).thenReturn(Mono.just(updated));
+            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 99)).thenReturn(Mono.just(updated));
 
             StepVerifier.create(useCase.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 99))
                     .expectNext(updated)
@@ -164,9 +161,9 @@ class ProductUseCasesTest {
 
         @Test
         void acceptsZeroStock() {
-            Product updated = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 0, CREATED, NOW);
+            Product updated = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 0);
             givenBranchExists();
-            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 0, NOW)).thenReturn(Mono.just(updated));
+            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 0)).thenReturn(Mono.just(updated));
 
             StepVerifier.create(useCase.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 0))
                     .expectNext(updated)
@@ -179,13 +176,13 @@ class ProductUseCasesTest {
                     .expectError(DomainValidationException.class)
                     .verify();
             verify(franchises, never()).findById(any());
-            verify(products, never()).updateStock(any(), any(), anyInt(), any());
+            verify(products, never()).updateStock(any(), any(), anyInt());
         }
 
         @Test
         void failsWhenTheProductDoesNotExistOrWasDeleted() {
             givenBranchExists();
-            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 3, NOW)).thenReturn(Mono.empty());
+            when(products.updateStock(PRODUCT_ID, BRANCH_ID, 3)).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 3))
                     .expectErrorMessage("Product 'product-1' not found in branch 'branch-1'")
@@ -199,7 +196,7 @@ class ProductUseCasesTest {
             StepVerifier.create(useCase.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 3))
                     .expectError(NotFoundException.class)
                     .verify();
-            verify(products, never()).updateStock(any(), any(), anyInt(), any());
+            verify(products, never()).updateStock(any(), any(), anyInt());
         }
     }
 
@@ -210,14 +207,14 @@ class ProductUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new ProductService(franchises, branches, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products);
         }
 
         @Test
         void renamesAtomically() {
-            Product renamed = new Product(PRODUCT_ID, BRANCH_ID, "Espresso", 10, CREATED, NOW);
+            Product renamed = new Product(PRODUCT_ID, BRANCH_ID, "Espresso", 10);
             givenBranchExists();
-            when(products.rename(PRODUCT_ID, BRANCH_ID, "Espresso", NOW)).thenReturn(Mono.just(renamed));
+            when(products.rename(PRODUCT_ID, BRANCH_ID, "Espresso")).thenReturn(Mono.just(renamed));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
                     .expectNext(renamed)
@@ -227,7 +224,7 @@ class ProductUseCasesTest {
         @Test
         void failsWhenTheProductDoesNotExist() {
             givenBranchExists();
-            when(products.rename(PRODUCT_ID, BRANCH_ID, "Espresso", NOW)).thenReturn(Mono.empty());
+            when(products.rename(PRODUCT_ID, BRANCH_ID, "Espresso")).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
                     .expectError(NotFoundException.class)
@@ -237,7 +234,7 @@ class ProductUseCasesTest {
         @Test
         void propagatesDuplicateNameErrors() {
             givenBranchExists();
-            when(products.rename(PRODUCT_ID, BRANCH_ID, "Tea", NOW))
+            when(products.rename(PRODUCT_ID, BRANCH_ID, "Tea"))
                     .thenReturn(Mono.error(DuplicateNameException.product("Tea")));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Tea"))
@@ -250,7 +247,7 @@ class ProductUseCasesTest {
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "   "))
                     .expectError(DomainValidationException.class)
                     .verify();
-            verify(products, never()).rename(any(), any(), any(), any());
+            verify(products, never()).rename(any(), any(), any());
         }
     }
 }

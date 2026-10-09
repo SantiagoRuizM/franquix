@@ -9,7 +9,6 @@ import com.franquix.franchises.domain.port.in.ProductUseCase;
 import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
-import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,30 +20,23 @@ import org.springframework.context.annotation.Configuration;
 public class UseCaseConfig {
 
     @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
     FranchiseUseCase franchiseUseCase(
             FranchiseRepositoryPort franchises,
             BranchRepositoryPort branches,
-            ProductRepositoryPort products,
-            Clock clock) {
-        return new FranchiseService(franchises, branches, products, clock);
+            ProductRepositoryPort products) {
+        return new FranchiseService(franchises, branches, products);
     }
 
     @Bean
-    BranchUseCase branchUseCase(FranchiseRepositoryPort franchises, BranchRepositoryPort branches, Clock clock) {
-        return new BranchService(franchises, branches, clock);
+    BranchUseCase branchUseCase(FranchiseRepositoryPort franchises, BranchRepositoryPort branches) {
+        return new BranchService(franchises, branches);
     }
 
     @Bean
     ProductUseCase productUseCase(
             FranchiseRepositoryPort franchises,
             BranchRepositoryPort branches,
-            ProductRepositoryPort products,
-            Clock clock) {
-        return new ProductService(franchises, branches, products, clock);
+            ProductRepositoryPort products) {
+        return new ProductService(franchises, branches, products);
     }
 }

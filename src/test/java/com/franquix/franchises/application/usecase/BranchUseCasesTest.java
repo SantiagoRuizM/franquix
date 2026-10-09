@@ -1,10 +1,7 @@
 package com.franquix.franchises.application.usecase;
 
 import static com.franquix.franchises.application.usecase.Fixtures.BRANCH_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.CLOCK;
-import static com.franquix.franchises.application.usecase.Fixtures.CREATED;
 import static com.franquix.franchises.application.usecase.Fixtures.FRANCHISE_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.NOW;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,13 +40,13 @@ class BranchUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new BranchService(franchises, branches, CLOCK);
+            useCase = new BranchService(franchises, branches);
         }
 
         @Test
         void savesANewBranchUnderTheFranchise() {
-            Branch toSave = new Branch(null, FRANCHISE_ID, "Downtown", NOW, NOW);
-            Branch saved = new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW);
+            Branch toSave = new Branch(null, FRANCHISE_ID, "Downtown");
+            Branch saved = new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown");
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
             when(branches.create(toSave)).thenReturn(Mono.just(saved));
 
@@ -95,14 +92,14 @@ class BranchUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new BranchService(franchises, branches, CLOCK);
+            useCase = new BranchService(franchises, branches);
         }
 
         @Test
         void renamesAtomicallyWithinTheFranchise() {
-            Branch renamed = new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown", CREATED, NOW);
+            Branch renamed = new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown");
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW)).thenReturn(Mono.just(renamed));
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown")).thenReturn(Mono.just(renamed));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, " Uptown "))
                     .expectNext(renamed)
@@ -116,13 +113,13 @@ class BranchUseCasesTest {
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
                     .expectErrorMessage("Franchise 'franchise-1' not found")
                     .verify();
-            verify(branches, never()).rename(any(), any(), any(), any());
+            verify(branches, never()).rename(any(), any(), any());
         }
 
         @Test
         void failsWhenTheBranchIsNotInTheFranchise() {
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW)).thenReturn(Mono.empty());
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown")).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
                     .expectErrorMessage("Branch 'branch-1' not found in franchise 'franchise-1'")
@@ -132,7 +129,7 @@ class BranchUseCasesTest {
         @Test
         void propagatesDuplicateNameErrors() {
             when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
-            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW))
+            when(branches.rename(BRANCH_ID, FRANCHISE_ID, "Uptown"))
                     .thenReturn(Mono.error(DuplicateNameException.branch("Uptown")));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))

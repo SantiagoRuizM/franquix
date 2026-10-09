@@ -8,7 +8,6 @@ import com.franquix.franchises.domain.port.in.ProductUseCase;
 import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
-import java.time.Clock;
 import reactor.core.publisher.Mono;
 
 /**
@@ -20,23 +19,20 @@ public class ProductService implements ProductUseCase {
     private final FranchiseRepositoryPort franchises;
     private final BranchRepositoryPort branches;
     private final ProductRepositoryPort products;
-    private final Clock clock;
 
     public ProductService(
             FranchiseRepositoryPort franchises,
             BranchRepositoryPort branches,
-            ProductRepositoryPort products,
-            Clock clock) {
+            ProductRepositoryPort products) {
         this.franchises = franchises;
         this.branches = branches;
         this.products = products;
-        this.clock = clock;
     }
 
     @Override
     public Mono<Product> add(String franchiseId, String branchId, String name, int stock) {
         return requireBranch(franchiseId, branchId)
-                .map(branch -> Product.create(branch.id(), name, stock, clock.instant()))
+                .map(branch -> Product.create(branch.id(), name, stock))
                 .flatMap(products::create);
     }
 
@@ -53,7 +49,7 @@ public class ProductService implements ProductUseCase {
     public Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock) {
         return Mono.fromCallable(() -> DomainRules.requireValidStock(stock))
                 .flatMap(validStock -> requireBranch(franchiseId, branchId)
-                        .flatMap(branch -> products.updateStock(productId, branch.id(), validStock, clock.instant()))
+                        .flatMap(branch -> products.updateStock(productId, branch.id(), validStock))
                         .switchIfEmpty(Mono.error(() -> NotFoundException.product(branchId, productId))));
     }
 
@@ -61,7 +57,7 @@ public class ProductService implements ProductUseCase {
     public Mono<Product> rename(String franchiseId, String branchId, String productId, String newName) {
         return Mono.fromCallable(() -> DomainRules.requireValidName("name", newName))
                 .flatMap(name -> requireBranch(franchiseId, branchId)
-                        .flatMap(branch -> products.rename(productId, branch.id(), name, clock.instant()))
+                        .flatMap(branch -> products.rename(productId, branch.id(), name))
                         .switchIfEmpty(Mono.error(() -> NotFoundException.product(branchId, productId))));
     }
 

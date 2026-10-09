@@ -6,7 +6,6 @@ import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.ProductDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.mapper.MongoDocumentMapper;
 import com.franquix.franchises.infrastructure.adapter.mongo.repository.ProductMongoRepository;
-import java.time.Instant;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Update;
@@ -34,14 +33,14 @@ public class MongoProductRepositoryAdapter implements ProductRepositoryPort {
     }
 
     @Override
-    public Mono<Product> rename(String productId, String branchId, String name, Instant updatedAt) {
-        return modify(productId, branchId, AtomicUpdates.rename(name, updatedAt))
+    public Mono<Product> rename(String productId, String branchId, String name) {
+        return modify(productId, branchId, AtomicUpdates.rename(name))
                 .onErrorMap(DuplicateKeyException.class, error -> DuplicateNameException.product(name));
     }
 
     @Override
-    public Mono<Product> updateStock(String productId, String branchId, int stock, Instant updatedAt) {
-        return modify(productId, branchId, AtomicUpdates.stock(stock, updatedAt));
+    public Mono<Product> updateStock(String productId, String branchId, int stock) {
+        return modify(productId, branchId, AtomicUpdates.stock(stock));
     }
 
     @Override

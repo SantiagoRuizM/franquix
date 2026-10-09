@@ -2,7 +2,6 @@ package com.franquix.franchises.infrastructure.adapter.mongo;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
-import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Query;
@@ -30,11 +29,11 @@ final class AtomicUpdates {
         return Query.query(where("_id").is(new ObjectId(id)).and(parentField).is(new ObjectId(parentId)));
     }
 
-    static Update rename(String name, Instant updatedAt) {
-        return new Update().set("name", name).set("updatedAt", updatedAt);
+    static Update rename(String name) {
+        return new Update().set("name", name);
     }
 
-    static Update stock(int stock, Instant updatedAt) {
-        return new Update().set("stock", stock).set("updatedAt", updatedAt);
+    static Update stock(int stock) {
+        return new Update().set("stock", stock);
     }
 }

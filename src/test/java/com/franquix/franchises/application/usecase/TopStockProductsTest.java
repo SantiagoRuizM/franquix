@@ -35,7 +35,7 @@ class TopStockProductsTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new FranchiseService(franchises, branches, products, Fixtures.CLOCK);
+        useCase = new FranchiseService(franchises, branches, products);
     }
 
     @Test

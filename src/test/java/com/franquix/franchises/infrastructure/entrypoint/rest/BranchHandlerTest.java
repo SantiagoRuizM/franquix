@@ -19,7 +19,7 @@ class BranchHandlerTest extends RestTestSupport {
     @Test
     void addReturns201WithLocationAndBody() {
         when(branches.add(FRANCHISE_ID, "Downtown"))
-                .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW)));
+                .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown")));
 
         client.post().uri(BRANCHES, FRANCHISE_ID)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +72,7 @@ class BranchHandlerTest extends RestTestSupport {
     @Test
     void renameReturnsTheRenamedBranch() {
         when(branches.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
-                .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW, NOW)));
+                .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown")));
 
         client.patch().uri(BRANCHES + "/{branchId}/name", FRANCHISE_ID, BRANCH_ID)
                 .contentType(MediaType.APPLICATION_JSON)

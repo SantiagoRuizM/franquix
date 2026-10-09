@@ -9,7 +9,6 @@ import com.franquix.franchises.domain.port.in.FranchiseUseCase;
 import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.domain.port.out.ProductRepositoryPort;
-import java.time.Clock;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -18,29 +17,26 @@ public class FranchiseService implements FranchiseUseCase {
     private final FranchiseRepositoryPort franchises;
     private final BranchRepositoryPort branches;
     private final ProductRepositoryPort products;
-    private final Clock clock;
 
     public FranchiseService(
             FranchiseRepositoryPort franchises,
             BranchRepositoryPort branches,
-            ProductRepositoryPort products,
-            Clock clock) {
+            ProductRepositoryPort products) {
         this.franchises = franchises;
         this.branches = branches;
         this.products = products;
-        this.clock = clock;
     }
 
     @Override
     public Mono<Franchise> create(String name) {
-        return Mono.fromCallable(() -> Franchise.create(name, clock.instant()))
+        return Mono.fromCallable(() -> Franchise.create(name))
                 .flatMap(franchises::create);
     }
 
     @Override
     public Mono<Franchise> rename(String franchiseId, String newName) {
         return Mono.fromCallable(() -> DomainRules.requireValidName("name", newName))
-                .flatMap(name -> franchises.rename(franchiseId, name, clock.instant()))
+                .flatMap(name -> franchises.rename(franchiseId, name))
                 .switchIfEmpty(Mono.error(() -> NotFoundException.franchise(franchiseId)));
     }
 

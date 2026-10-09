@@ -16,18 +16,15 @@ public final class RestMapper {
     }
 
     public static FranchiseResponse toResponse(Franchise franchise) {
-        return new FranchiseResponse(franchise.id(), franchise.name(), franchise.createdAt(), franchise.updatedAt());
+        return new FranchiseResponse(franchise.id(), franchise.name());
     }
 
     public static BranchResponse toResponse(Branch branch) {
-        return new BranchResponse(
-                branch.id(), branch.franchiseId(), branch.name(), branch.createdAt(), branch.updatedAt());
+        return new BranchResponse(branch.id(), branch.franchiseId(), branch.name());
     }
 
     public static ProductResponse toResponse(Product product) {
-        return new ProductResponse(
-                product.id(), product.branchId(), product.name(), product.stock(),
-                product.createdAt(), product.updatedAt());
+        return new ProductResponse(product.id(), product.branchId(), product.name(), product.stock());
     }
 
     public static TopStockProductResponse toResponse(BranchTopProduct top) {

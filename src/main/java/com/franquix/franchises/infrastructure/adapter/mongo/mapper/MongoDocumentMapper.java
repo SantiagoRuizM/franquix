@@ -14,33 +14,26 @@ public final class MongoDocumentMapper {
     }
 
     public static FranchiseDocument toDocument(Franchise franchise) {
-        return new FranchiseDocument(
-                franchise.id(), franchise.name(), franchise.createdAt(), franchise.updatedAt());
+        return new FranchiseDocument(franchise.id(), franchise.name());
     }
 
     public static Franchise toDomain(FranchiseDocument document) {
-        return new Franchise(document.id(), document.name(), document.createdAt(), document.updatedAt());
+        return new Franchise(document.id(), document.name());
     }
 
     public static BranchDocument toDocument(Branch branch) {
-        return new BranchDocument(
-                branch.id(), branch.franchiseId(), branch.name(), branch.createdAt(), branch.updatedAt());
+        return new BranchDocument(branch.id(), branch.franchiseId(), branch.name());
     }
 
     public static Branch toDomain(BranchDocument document) {
-        return new Branch(
-                document.id(), document.franchiseId(), document.name(), document.createdAt(), document.updatedAt());
+        return new Branch(document.id(), document.franchiseId(), document.name());
     }
 
     public static ProductDocument toDocument(Product product) {
-        return new ProductDocument(
-                product.id(), product.branchId(), product.name(), product.stock(),
-                product.createdAt(), product.updatedAt());
+        return new ProductDocument(product.id(), product.branchId(), product.name(), product.stock());
     }
 
     public static Product toDomain(ProductDocument document) {
-        return new Product(
-                document.id(), document.branchId(), document.name(), document.stock(),
-                document.createdAt(), document.updatedAt());
+        return new Product(document.id(), document.branchId(), document.name(), document.stock());
     }
 }

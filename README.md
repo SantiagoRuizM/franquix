@@ -124,7 +124,7 @@ Errors look like this:
 ```json
 { "type": "about:blank", "title": "Conflict", "status": 409,
   "detail": "A franchise named 'Acme Coffee Global' already exists",
-  "instance": "/api/v1/franchises", "timestamp": "2026-10-03T15:33:49.204Z" }
+  "instance": "/api/v1/franchises" }
 ```
 
 ## Tests

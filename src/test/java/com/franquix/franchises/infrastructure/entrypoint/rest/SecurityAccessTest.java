@@ -44,7 +44,7 @@ class SecurityAccessTest extends RestTestSupport {
 
     @Test
     void theRightTokenIsAccepted() {
-        when(franchises.create(any())).thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme", NOW, NOW)));
+        when(franchises.create(any())).thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme")));
 
         client.post().uri(BASE)
                 .contentType(MediaType.APPLICATION_JSON)

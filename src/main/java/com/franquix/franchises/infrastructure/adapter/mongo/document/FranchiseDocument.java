@@ -1,6 +1,5 @@
 package com.franquix.franchises.infrastructure.adapter.mongo.document;
 
-import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -9,9 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = FranchiseDocument.COLLECTION)
 public record FranchiseDocument(
         @Id String id,
-        @Indexed(unique = true) String name,
-        Instant createdAt,
-        Instant updatedAt) {
+        @Indexed(unique = true) String name) {
 
     public static final String COLLECTION = "franchises";
 }

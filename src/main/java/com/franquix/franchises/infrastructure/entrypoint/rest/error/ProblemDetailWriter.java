@@ -1,8 +1,6 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.error;
 
 import java.net.URI;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,18 +15,16 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Writes RFC 7807 responses. Shared by the global error handler, the security entry points and the
- * rate limiter, so every error, including those raised before routing, has the same shape.
+ * Writes RFC 7807 responses. Shared by the global error handler and the API token filter, so every
+ * error, including those raised before routing, has the same shape.
  */
 @Component
 public class ProblemDetailWriter {
 
     private final List<HttpMessageWriter<?>> messageWriters;
-    private final Clock clock;
 
-    public ProblemDetailWriter(ServerCodecConfigurer codecs, Clock clock) {
+    public ProblemDetailWriter(ServerCodecConfigurer codecs) {
         this.messageWriters = codecs.getWriters();
-        this.clock = clock;
     }
 
     public Mono<Void> write(ServerWebExchange exchange, HttpStatus status, String detail) {
@@ -37,7 +33,6 @@ public class ProblemDetailWriter {
 
     public Mono<Void> write(ServerWebExchange exchange, ProblemDetail problem, HttpHeaders headers) {
         problem.setInstance(URI.create(exchange.getRequest().getPath().value()));
-        problem.setProperty("timestamp", Instant.now(clock));
         return ServerResponse.status(problem.getStatus())
                 .headers(responseHeaders -> responseHeaders.addAll(headers))
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)

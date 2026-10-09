@@ -6,7 +6,6 @@ import com.franquix.franchises.domain.port.out.FranchiseRepositoryPort;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.mapper.MongoDocumentMapper;
 import com.franquix.franchises.infrastructure.adapter.mongo.repository.FranchiseMongoRepository;
-import java.time.Instant;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.stereotype.Component;
@@ -31,11 +30,11 @@ public class MongoFranchiseRepositoryAdapter implements FranchiseRepositoryPort 
     }
 
     @Override
-    public Mono<Franchise> rename(String franchiseId, String name, Instant updatedAt) {
+    public Mono<Franchise> rename(String franchiseId, String name) {
         if (!ObjectIds.allValid(franchiseId)) {
             return Mono.empty();
         }
-        return template.findAndModify(AtomicUpdates.byId(franchiseId), AtomicUpdates.rename(name, updatedAt),
+        return template.findAndModify(AtomicUpdates.byId(franchiseId), AtomicUpdates.rename(name),
                         AtomicUpdates.RETURN_NEW_NO_UPSERT, FranchiseDocument.class)
                 .map(MongoDocumentMapper::toDomain)
                 .onErrorMap(DuplicateKeyException.class, error -> DuplicateNameException.franchise(name));

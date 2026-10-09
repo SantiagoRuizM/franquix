@@ -18,7 +18,7 @@ class ProductHandlerTest extends RestTestSupport {
     private static final String PRODUCT = PRODUCTS + "/{productId}";
 
     private static Product product(String name, int stock) {
-        return new Product(PRODUCT_ID, BRANCH_ID, name, stock, NOW, NOW);
+        return new Product(PRODUCT_ID, BRANCH_ID, name, stock);
     }
 
     @Test

@@ -11,14 +11,9 @@ import com.franquix.franchises.infrastructure.entrypoint.rest.handler.ProductHan
 import com.franquix.franchises.infrastructure.entrypoint.rest.router.FranchiseRouter;
 import com.franquix.franchises.infrastructure.entrypoint.rest.validation.RequestValidator;
 import com.franquix.franchises.infrastructure.security.ApiTokenFilter;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -37,14 +32,12 @@ import org.springframework.test.web.reactive.server.WebTestClient;
         RequestValidator.class,
         ProblemDetailWriter.class,
         GlobalErrorHandler.class,
-        ApiTokenFilter.class,
-        RestTestSupport.FixedClock.class
+        ApiTokenFilter.class
 })
 public abstract class RestTestSupport {
 
     /** The {@code local} profile default token. */
     protected static final String API_TOKEN = "local-dev-token";
-    protected static final Instant NOW = Instant.parse("2026-03-15T12:30:00Z");
     protected static final String FRANCHISE_ID = "6650f1c2a1b2c3d4e5f60718";
     protected static final String BRANCH_ID = "6650f1c2a1b2c3d4e5f60719";
     protected static final String PRODUCT_ID = "6650f1c2a1b2c3d4e5f6071a";
@@ -65,14 +58,5 @@ public abstract class RestTestSupport {
     @BeforeEach
     void authenticate() {
         client = anonymous.mutate().defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + API_TOKEN).build();
-    }
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FixedClock {
-
-        @Bean
-        Clock clock() {
-            return Clock.fixed(NOW, ZoneOffset.UTC);
-        }
     }
 }

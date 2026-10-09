@@ -1,9 +1,6 @@
 package com.franquix.franchises.application.usecase;
 
-import static com.franquix.franchises.application.usecase.Fixtures.CLOCK;
-import static com.franquix.franchises.application.usecase.Fixtures.CREATED;
 import static com.franquix.franchises.application.usecase.Fixtures.FRANCHISE_ID;
-import static com.franquix.franchises.application.usecase.Fixtures.NOW;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,13 +38,13 @@ class FranchiseUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new FranchiseService(franchises, branches, products, CLOCK);
+            useCase = new FranchiseService(franchises, branches, products);
         }
 
         @Test
-        void savesATrimmedFranchiseStampedWithTheClock() {
-            Franchise expectedToSave = new Franchise(null, "Acme", NOW, NOW);
-            Franchise saved = new Franchise(FRANCHISE_ID, "Acme", NOW, NOW);
+        void savesATrimmedFranchise() {
+            Franchise expectedToSave = new Franchise(null, "Acme");
+            Franchise saved = new Franchise(FRANCHISE_ID, "Acme");
             when(franchises.create(expectedToSave)).thenReturn(Mono.just(saved));
 
             StepVerifier.create(useCase.create("  Acme "))
@@ -80,13 +77,13 @@ class FranchiseUseCasesTest {
 
         @BeforeEach
         void setUp() {
-            useCase = new FranchiseService(franchises, branches, products, CLOCK);
+            useCase = new FranchiseService(franchises, branches, products);
         }
 
         @Test
         void renamesAtomicallyWithTheTrimmedName() {
-            Franchise renamed = new Franchise(FRANCHISE_ID, "Acme Global", CREATED, NOW);
-            when(franchises.rename(FRANCHISE_ID, "Acme Global", NOW)).thenReturn(Mono.just(renamed));
+            Franchise renamed = new Franchise(FRANCHISE_ID, "Acme Global");
+            when(franchises.rename(FRANCHISE_ID, "Acme Global")).thenReturn(Mono.just(renamed));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, "  Acme Global "))
                     .expectNext(renamed)
@@ -95,7 +92,7 @@ class FranchiseUseCasesTest {
 
         @Test
         void failsWhenTheFranchiseDoesNotExist() {
-            when(franchises.rename(FRANCHISE_ID, "Acme Global", NOW)).thenReturn(Mono.empty());
+            when(franchises.rename(FRANCHISE_ID, "Acme Global")).thenReturn(Mono.empty());
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, "Acme Global"))
                     .expectErrorMessage("Franchise 'franchise-1' not found")
@@ -104,7 +101,7 @@ class FranchiseUseCasesTest {
 
         @Test
         void propagatesDuplicateNameErrors() {
-            when(franchises.rename(FRANCHISE_ID, "Other", NOW))
+            when(franchises.rename(FRANCHISE_ID, "Other"))
                     .thenReturn(Mono.error(DuplicateNameException.franchise("Other")));
 
             StepVerifier.create(useCase.rename(FRANCHISE_ID, "Other"))
@@ -117,7 +114,7 @@ class FranchiseUseCasesTest {
             StepVerifier.create(useCase.rename(FRANCHISE_ID, ""))
                     .expectError(DomainValidationException.class)
                     .verify();
-            verify(franchises, never()).rename(any(), any(), any());
+            verify(franchises, never()).rename(any(), any());
         }
     }
 }

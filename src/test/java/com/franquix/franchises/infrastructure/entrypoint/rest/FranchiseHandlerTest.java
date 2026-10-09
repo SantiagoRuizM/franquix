@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 class FranchiseHandlerTest extends RestTestSupport {
 
-    private static final Franchise ACME = new Franchise(FRANCHISE_ID, "Acme", NOW, NOW);
+    private static final Franchise ACME = new Franchise(FRANCHISE_ID, "Acme");
 
     @Test
     void createReturns201WithLocationAndBody() {
@@ -31,8 +31,7 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .expectHeader().valueMatches("Location", ".*/api/v1/franchises/" + FRANCHISE_ID)
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(FRANCHISE_ID)
-                .jsonPath("$.name").isEqualTo("Acme")
-                .jsonPath("$.createdAt").isEqualTo("2026-03-15T12:30:00Z");
+                .jsonPath("$.name").isEqualTo("Acme");
     }
 
     @Test
@@ -48,8 +47,7 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .jsonPath("$.status").isEqualTo(400)
                 .jsonPath("$.detail").isEqualTo("Request validation failed")
                 .jsonPath("$.errors.name").isEqualTo("must not be blank")
-                .jsonPath("$.instance").isEqualTo(BASE)
-                .jsonPath("$.timestamp").isEqualTo("2026-03-15T12:30:00Z");
+                .jsonPath("$.instance").isEqualTo(BASE);
         verifyNoInteractions(franchises);
     }
 
@@ -100,7 +98,7 @@ class FranchiseHandlerTest extends RestTestSupport {
     @Test
     void renameReturnsTheRenamedFranchise() {
         when(franchises.rename(FRANCHISE_ID, "Acme Global"))
-                .thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme Global", NOW, NOW)));
+                .thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme Global")));
 
         client.patch().uri(BASE + "/{id}/name", FRANCHISE_ID)
                 .contentType(MediaType.APPLICATION_JSON)
