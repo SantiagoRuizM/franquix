@@ -38,13 +38,6 @@ class ProductUseCasesTest {
     @Mock
     private ProductRepositoryPort products;
 
-    private HierarchyResolver hierarchy;
-
-    @BeforeEach
-    void setUp() {
-        hierarchy = new HierarchyResolver(franchises, branches);
-    }
-
     private void givenBranchExists() {
         when(franchises.findById(FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.franchise()));
         when(branches.findByIdAndFranchiseId(BRANCH_ID, FRANCHISE_ID)).thenReturn(Mono.just(Fixtures.branch()));
@@ -58,11 +51,11 @@ class ProductUseCasesTest {
     @Nested
     class AddProduct {
 
-        private AddProductService useCase;
+        private ProductService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new AddProductService(hierarchy, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products, CLOCK);
         }
 
         @Test
@@ -111,11 +104,11 @@ class ProductUseCasesTest {
     @Nested
     class DeleteProduct {
 
-        private DeleteProductService useCase;
+        private ProductService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new DeleteProductService(hierarchy, products);
+            useCase = new ProductService(franchises, branches, products, CLOCK);
         }
 
         @Test
@@ -151,11 +144,11 @@ class ProductUseCasesTest {
     @Nested
     class UpdateProductStock {
 
-        private UpdateProductStockService useCase;
+        private ProductService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new UpdateProductStockService(hierarchy, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products, CLOCK);
         }
 
         @Test
@@ -213,11 +206,11 @@ class ProductUseCasesTest {
     @Nested
     class RenameProduct {
 
-        private RenameProductService useCase;
+        private ProductService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new RenameProductService(hierarchy, products, CLOCK);
+            useCase = new ProductService(franchises, branches, products, CLOCK);
         }
 
         @Test

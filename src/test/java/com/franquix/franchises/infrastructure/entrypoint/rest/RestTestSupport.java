@@ -1,14 +1,8 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest;
 
-import com.franquix.franchises.domain.port.in.AddBranchUseCase;
-import com.franquix.franchises.domain.port.in.AddProductUseCase;
-import com.franquix.franchises.domain.port.in.CreateFranchiseUseCase;
-import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
-import com.franquix.franchises.domain.port.in.GetTopStockProductsUseCase;
-import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
-import com.franquix.franchises.domain.port.in.RenameFranchiseUseCase;
-import com.franquix.franchises.domain.port.in.RenameProductUseCase;
-import com.franquix.franchises.domain.port.in.UpdateProductStockUseCase;
+import com.franquix.franchises.domain.port.in.BranchUseCase;
+import com.franquix.franchises.domain.port.in.FranchiseUseCase;
+import com.franquix.franchises.domain.port.in.ProductUseCase;
 import com.franquix.franchises.infrastructure.entrypoint.rest.error.GlobalErrorHandler;
 import com.franquix.franchises.infrastructure.entrypoint.rest.error.ProblemDetailWriter;
 import com.franquix.franchises.infrastructure.entrypoint.rest.handler.BranchHandler;
@@ -62,23 +56,11 @@ public abstract class RestTestSupport {
     protected WebTestClient client;
 
     @MockitoBean
-    protected CreateFranchiseUseCase createFranchise;
+    protected FranchiseUseCase franchises;
     @MockitoBean
-    protected RenameFranchiseUseCase renameFranchise;
+    protected BranchUseCase branches;
     @MockitoBean
-    protected GetTopStockProductsUseCase getTopStockProducts;
-    @MockitoBean
-    protected AddBranchUseCase addBranch;
-    @MockitoBean
-    protected RenameBranchUseCase renameBranch;
-    @MockitoBean
-    protected AddProductUseCase addProduct;
-    @MockitoBean
-    protected DeleteProductUseCase deleteProduct;
-    @MockitoBean
-    protected UpdateProductStockUseCase updateStock;
-    @MockitoBean
-    protected RenameProductUseCase renameProduct;
+    protected ProductUseCase products;
 
     @BeforeEach
     void authenticate() {

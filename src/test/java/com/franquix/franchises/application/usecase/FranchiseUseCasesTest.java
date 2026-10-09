@@ -34,21 +34,14 @@ class FranchiseUseCasesTest {
     @Mock
     private ProductRepositoryPort products;
 
-    private HierarchyResolver hierarchy;
-
-    @BeforeEach
-    void setUp() {
-        hierarchy = new HierarchyResolver(franchises, branches);
-    }
-
     @Nested
     class CreateFranchise {
 
-        private CreateFranchiseService useCase;
+        private FranchiseService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new CreateFranchiseService(franchises, CLOCK);
+            useCase = new FranchiseService(franchises, branches, products, CLOCK);
         }
 
         @Test
@@ -83,11 +76,11 @@ class FranchiseUseCasesTest {
     @Nested
     class RenameFranchise {
 
-        private RenameFranchiseService useCase;
+        private FranchiseService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new RenameFranchiseService(franchises, CLOCK);
+            useCase = new FranchiseService(franchises, branches, products, CLOCK);
         }
 
         @Test

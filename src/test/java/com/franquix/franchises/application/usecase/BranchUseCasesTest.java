@@ -36,21 +36,14 @@ class BranchUseCasesTest {
     @Mock
     private ProductRepositoryPort products;
 
-    private HierarchyResolver hierarchy;
-
-    @BeforeEach
-    void setUp() {
-        hierarchy = new HierarchyResolver(franchises, branches);
-    }
-
     @Nested
     class AddBranch {
 
-        private AddBranchService useCase;
+        private BranchService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new AddBranchService(hierarchy, branches, CLOCK);
+            useCase = new BranchService(franchises, branches, CLOCK);
         }
 
         @Test
@@ -98,11 +91,11 @@ class BranchUseCasesTest {
     @Nested
     class RenameBranch {
 
-        private RenameBranchService useCase;
+        private BranchService useCase;
 
         @BeforeEach
         void setUp() {
-            useCase = new RenameBranchService(hierarchy, branches, CLOCK);
+            useCase = new BranchService(franchises, branches, CLOCK);
         }
 
         @Test

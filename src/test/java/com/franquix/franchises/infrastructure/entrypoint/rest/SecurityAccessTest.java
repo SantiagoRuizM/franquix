@@ -29,7 +29,7 @@ class SecurityAccessTest extends RestTestSupport {
                 .jsonPath("$.status").isEqualTo(401)
                 .jsonPath("$.detail").isEqualTo("Missing or invalid bearer token")
                 .jsonPath("$.instance").isEqualTo(BASE);
-        verifyNoInteractions(createFranchise);
+        verifyNoInteractions(franchises);
     }
 
     @ParameterizedTest(name = "Authorization: {0}")
@@ -39,12 +39,12 @@ class SecurityAccessTest extends RestTestSupport {
                 .header(HttpHeaders.AUTHORIZATION, authorization)
                 .exchange()
                 .expectStatus().isUnauthorized();
-        verifyNoInteractions(getTopStockProducts);
+        verifyNoInteractions(franchises);
     }
 
     @Test
     void theRightTokenIsAccepted() {
-        when(createFranchise.create(any())).thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme", NOW, NOW)));
+        when(franchises.create(any())).thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme", NOW, NOW)));
 
         client.post().uri(BASE)
                 .contentType(MediaType.APPLICATION_JSON)

@@ -17,8 +17,8 @@ stores its data in MongoDB.
 
 ```mermaid
 flowchart LR
-    REST["infrastructure/entrypoint/rest<br/>Router · Handlers · DTOs · error handler"] --> IN["domain/port/in<br/>use case interfaces"]
-    UC["application/usecase<br/>use case services"] -. implements .-> IN
+    REST["infrastructure/entrypoint/rest<br/>Router · Handlers · DTOs · error handler"] --> IN["domain/port/in<br/>FranchiseUseCase · BranchUseCase · ProductUseCase"]
+    UC["application/usecase<br/>FranchiseService · BranchService · ProductService"] -. implements .-> IN
     UC --> MODEL["domain/model<br/>Franchise · Branch · Product"]
     UC --> OUT["domain/port/out<br/>repository ports"]
     MONGO["infrastructure/adapter/mongo<br/>documents · repositories · adapters"] -. implements .-> OUT
@@ -26,7 +26,7 @@ flowchart LR
 
 - **Domain:** immutable records and ports. It has no Spring or MongoDB imports, and an ArchUnit
   test enforces that.
-- **Application:** one service per use case.
+- **Application:** one service per aggregate (franchise, branch, product).
 - **Infrastructure:**
   - REST: Router Functions and Handlers.
   - MongoDB: the reactive adapter.
@@ -187,7 +187,7 @@ takes about a minute while the JVM starts.
 ```
 src/main/java/com/franquix/franchises
 ├── domain/            model, exceptions, port/in, port/out
-├── application/       use case services
+├── application/       FranchiseService, BranchService, ProductService
 └── infrastructure/    rest (router, handlers, dto, errors), adapter/mongo, config, security
 infra/                 Terraform for Atlas M0
 docs/                  MVP spec, requests.http

@@ -18,7 +18,7 @@ class BranchHandlerTest extends RestTestSupport {
 
     @Test
     void addReturns201WithLocationAndBody() {
-        when(addBranch.add(FRANCHISE_ID, "Downtown"))
+        when(branches.add(FRANCHISE_ID, "Downtown"))
                 .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW)));
 
         client.post().uri(BRANCHES, FRANCHISE_ID)
@@ -35,7 +35,7 @@ class BranchHandlerTest extends RestTestSupport {
 
     @Test
     void addMapsMissingFranchisesTo404() {
-        when(addBranch.add(FRANCHISE_ID, "Downtown")).thenReturn(Mono.error(NotFoundException.franchise(FRANCHISE_ID)));
+        when(branches.add(FRANCHISE_ID, "Downtown")).thenReturn(Mono.error(NotFoundException.franchise(FRANCHISE_ID)));
 
         client.post().uri(BRANCHES, FRANCHISE_ID)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -47,7 +47,7 @@ class BranchHandlerTest extends RestTestSupport {
     @Test
     void addMapsDomainValidationErrorsTo400() {
         String tooLong = "x".repeat(101);
-        when(addBranch.add(FRANCHISE_ID, tooLong))
+        when(branches.add(FRANCHISE_ID, tooLong))
                 .thenReturn(Mono.error(new DomainValidationException("name must be at most 100 characters")));
 
         client.post().uri(BRANCHES, FRANCHISE_ID)
@@ -66,12 +66,12 @@ class BranchHandlerTest extends RestTestSupport {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody().jsonPath("$.errors.franchiseId").exists();
-        verifyNoInteractions(addBranch);
+        verifyNoInteractions(branches);
     }
 
     @Test
     void renameReturnsTheRenamedBranch() {
-        when(renameBranch.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
+        when(branches.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
                 .thenReturn(Mono.just(new Branch(BRANCH_ID, FRANCHISE_ID, "Uptown", NOW, NOW)));
 
         client.patch().uri(BRANCHES + "/{branchId}/name", FRANCHISE_ID, BRANCH_ID)
@@ -84,7 +84,7 @@ class BranchHandlerTest extends RestTestSupport {
 
     @Test
     void renameMapsDuplicatesTo409() {
-        when(renameBranch.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
+        when(branches.rename(FRANCHISE_ID, BRANCH_ID, "Uptown"))
                 .thenReturn(Mono.error(DuplicateNameException.branch("Uptown")));
 
         client.patch().uri(BRANCHES + "/{branchId}/name", FRANCHISE_ID, BRANCH_ID)
@@ -102,6 +102,6 @@ class BranchHandlerTest extends RestTestSupport {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody().jsonPath("$.detail").isEqualTo("Invalid branchId 'zzz'");
-        verifyNoInteractions(renameBranch);
+        verifyNoInteractions(branches);
     }
 }

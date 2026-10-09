@@ -33,7 +33,7 @@ class GlobalErrorHandlerTest extends RestTestSupport {
 
     @Test
     void unexpectedErrorsBecomeA500WithoutInternals() {
-        when(getTopStockProducts.getTopStockProducts(FRANCHISE_ID))
+        when(franchises.getTopStockProducts(FRANCHISE_ID))
                 .thenReturn(Flux.error(new IllegalStateException("connection pool exhausted at db-01:27017")));
 
         client.get().uri(BASE + "/{id}/branches/top-stock-products", FRANCHISE_ID)
