@@ -162,6 +162,15 @@ terraform destroy                               # remove everything
 
 [`render.yaml`](render.yaml) deploys the Docker image as a **free** web service.
 
+```mermaid
+flowchart LR
+    DEV["git push main"] --> CI["GitHub Actions<br/>build · tests · coverage · terraform validate"]
+    CI -- checks pass --> RENDER["Render web service<br/>Docker image, free plan"]
+    CLIENT["API client"] -- HTTPS --> RENDER
+    RENDER -- "MONGODB_URI (TLS)" --> ATLAS["MongoDB Atlas M0<br/>AWS us-east-1"]
+    TF["Terraform<br/>infra/envs/prod"] -. provisions .-> ATLAS
+```
+
 1. Push the repository to GitHub.
 2. In Render, go to **New → Blueprint** and select the repository.
 3. Paste the Atlas `MONGODB_URI` when asked. Render generates `API_TOKEN` on its own; you can
