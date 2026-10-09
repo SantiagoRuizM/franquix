@@ -1,8 +1,6 @@
 package com.franquix.franchises.domain.port.out;
 
 import com.franquix.franchises.domain.model.Product;
-import java.time.Instant;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -23,16 +21,13 @@ public interface ProductRepositoryPort {
     Mono<Product> create(Product product);
 
     /** @return the updated product, or empty when it does not exist in that branch */
-    Mono<Product> rename(String productId, String branchId, String name, Instant updatedAt);
+    Mono<Product> rename(String productId, String branchId, String name);
 
     /** @return the updated product, or empty when it does not exist in that branch */
-    Mono<Product> updateStock(String productId, String branchId, int stock, Instant updatedAt);
+    Mono<Product> updateStock(String productId, String branchId, int stock);
 
     /** @return the product only when it exists and belongs to the branch, otherwise empty */
     Mono<Product> findByIdAndBranchId(String productId, String branchId);
-
-    /** @return every product of the branch, ordered by name ascending */
-    Flux<Product> findByBranchId(String branchId);
 
     /**
      * @return the product with the highest stock of the branch (ties broken by name ascending), or

@@ -1,7 +1,6 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.handler;
 
-import com.franquix.franchises.domain.port.in.AddBranchUseCase;
-import com.franquix.franchises.domain.port.in.RenameBranchUseCase;
+import com.franquix.franchises.domain.port.in.BranchUseCase;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.mapper.RestMapper;
 import com.franquix.franchises.infrastructure.entrypoint.rest.validation.RequestValidator;
@@ -14,13 +13,11 @@ import reactor.core.publisher.Mono;
 @Component
 public class BranchHandler {
 
-    private final AddBranchUseCase addBranch;
-    private final RenameBranchUseCase renameBranch;
+    private final BranchUseCase branches;
     private final RequestValidator validator;
 
-    public BranchHandler(AddBranchUseCase addBranch, RenameBranchUseCase renameBranch, RequestValidator validator) {
-        this.addBranch = addBranch;
-        this.renameBranch = renameBranch;
+    public BranchHandler(BranchUseCase branches, RequestValidator validator) {
+        this.branches = branches;
         this.validator = validator;
     }
 
@@ -28,7 +25,7 @@ public class BranchHandler {
         return Mono.defer(() -> {
             String franchiseId = validator.objectId(request, PathVariables.FRANCHISE_ID);
             return validator.body(request, NameRequest.class)
-                    .flatMap(body -> addBranch.add(franchiseId, body.name()));
+                    .flatMap(body -> branches.add(franchiseId, body.name()));
         }).flatMap(branch -> ServerResponse
                 .created(request.uriBuilder().path("/{id}").build(branch.id()))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -40,7 +37,7 @@ public class BranchHandler {
             String franchiseId = validator.objectId(request, PathVariables.FRANCHISE_ID);
             String branchId = validator.objectId(request, PathVariables.BRANCH_ID);
             return validator.body(request, NameRequest.class)
-                    .flatMap(body -> renameBranch.rename(franchiseId, branchId, body.name()));
+                    .flatMap(body -> branches.rename(franchiseId, branchId, body.name()));
         }).flatMap(branch -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(RestMapper.toResponse(branch)));

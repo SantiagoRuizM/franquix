@@ -1,10 +1,7 @@
 package com.franquix.franchises.infrastructure.entrypoint.rest.handler;
 
 import com.franquix.franchises.domain.model.Product;
-import com.franquix.franchises.domain.port.in.AddProductUseCase;
-import com.franquix.franchises.domain.port.in.DeleteProductUseCase;
-import com.franquix.franchises.domain.port.in.RenameProductUseCase;
-import com.franquix.franchises.domain.port.in.UpdateProductStockUseCase;
+import com.franquix.franchises.domain.port.in.ProductUseCase;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.CreateProductRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.StockUpdateRequest;
@@ -19,22 +16,11 @@ import reactor.core.publisher.Mono;
 @Component
 public class ProductHandler {
 
-    private final AddProductUseCase addProduct;
-    private final DeleteProductUseCase deleteProduct;
-    private final UpdateProductStockUseCase updateStock;
-    private final RenameProductUseCase renameProduct;
+    private final ProductUseCase products;
     private final RequestValidator validator;
 
-    public ProductHandler(
-            AddProductUseCase addProduct,
-            DeleteProductUseCase deleteProduct,
-            UpdateProductStockUseCase updateStock,
-            RenameProductUseCase renameProduct,
-            RequestValidator validator) {
-        this.addProduct = addProduct;
-        this.deleteProduct = deleteProduct;
-        this.updateStock = updateStock;
-        this.renameProduct = renameProduct;
+    public ProductHandler(ProductUseCase products, RequestValidator validator) {
+        this.products = products;
         this.validator = validator;
     }
 
@@ -43,7 +29,7 @@ public class ProductHandler {
             String franchiseId = validator.objectId(request, PathVariables.FRANCHISE_ID);
             String branchId = validator.objectId(request, PathVariables.BRANCH_ID);
             return validator.body(request, CreateProductRequest.class)
-                    .flatMap(body -> addProduct.add(franchiseId, branchId, body.name(), body.stock()));
+                    .flatMap(body -> products.add(franchiseId, branchId, body.name(), body.stock()));
         }).flatMap(product -> ServerResponse
                 .created(request.uriBuilder().path("/{id}").build(product.id()))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +37,7 @@ public class ProductHandler {
     }
 
     public Mono<ServerResponse> delete(ServerRequest request) {
-        return Mono.defer(() -> deleteProduct.delete(
+        return Mono.defer(() -> products.delete(
                         validator.objectId(request, PathVariables.FRANCHISE_ID),
                         validator.objectId(request, PathVariables.BRANCH_ID),
                         validator.objectId(request, PathVariables.PRODUCT_ID)))
@@ -62,7 +48,7 @@ public class ProductHandler {
         return Mono.defer(() -> {
             ProductPath path = ProductPath.of(request, validator);
             return validator.body(request, StockUpdateRequest.class)
-                    .flatMap(body -> updateStock.updateStock(
+                    .flatMap(body -> products.updateStock(
                             path.franchiseId(), path.branchId(), path.productId(), body.stock()));
         }).flatMap(this::ok);
     }
@@ -71,7 +57,7 @@ public class ProductHandler {
         return Mono.defer(() -> {
             ProductPath path = ProductPath.of(request, validator);
             return validator.body(request, NameRequest.class)
-                    .flatMap(body -> renameProduct.rename(
+                    .flatMap(body -> products.rename(
                             path.franchiseId(), path.branchId(), path.productId(), body.name()));
         }).flatMap(this::ok);
     }

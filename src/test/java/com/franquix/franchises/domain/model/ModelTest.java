@@ -4,32 +4,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.franquix.franchises.domain.exception.DomainValidationException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ModelTest {
 
-    private static final Instant CREATED = Instant.parse("2026-01-01T00:00:00Z");
-
     @Nested
     class FranchiseModel {
 
         @Test
-        void createTrimsTheNameAndStampsBothTimestamps() {
-            Franchise franchise = Franchise.create("  Acme Coffee ", CREATED);
+        void createTrimsTheName() {
+            Franchise franchise = Franchise.create("  Acme Coffee ");
 
             assertThat(franchise.id()).isNull();
             assertThat(franchise.name()).isEqualTo("Acme Coffee");
-            assertThat(franchise.createdAt()).isEqualTo(CREATED);
-            assertThat(franchise.updatedAt()).isEqualTo(CREATED);
         }
 
         @Test
         void rejectsBlankName() {
-            assertThatThrownBy(() -> Franchise.create("   ", CREATED))
+            assertThatThrownBy(() -> Franchise.create("   "))
                     .isInstanceOf(DomainValidationException.class);
         }
     }
@@ -39,16 +32,15 @@ class ModelTest {
 
         @Test
         void createKeepsTheFranchiseReference() {
-            Branch branch = Branch.create("f1", " Downtown ", CREATED);
+            Branch branch = Branch.create("f1", " Downtown ");
 
             assertThat(branch.franchiseId()).isEqualTo("f1");
             assertThat(branch.name()).isEqualTo("Downtown");
-            assertThat(branch.updatedAt()).isEqualTo(CREATED);
         }
 
         @Test
         void rejectsMissingFranchise() {
-            assertThatThrownBy(() -> Branch.create(null, "Downtown", CREATED))
+            assertThatThrownBy(() -> Branch.create(null, "Downtown"))
                     .isInstanceOf(DomainValidationException.class)
                     .hasMessage("franchiseId is required");
         }
@@ -59,7 +51,7 @@ class ModelTest {
 
         @Test
         void createValidatesAndStoresStock() {
-            Product product = Product.create("b1", " Coffee ", 10, CREATED);
+            Product product = Product.create("b1", " Coffee ", 10);
 
             assertThat(product.branchId()).isEqualTo("b1");
             assertThat(product.name()).isEqualTo("Coffee");
@@ -68,13 +60,13 @@ class ModelTest {
 
         @Test
         void rejectsNegativeStock() {
-            assertThatThrownBy(() -> Product.create("b1", "Coffee", -5, CREATED))
+            assertThatThrownBy(() -> Product.create("b1", "Coffee", -5))
                     .isInstanceOf(DomainValidationException.class);
         }
 
         @Test
         void rejectsMissingBranch() {
-            assertThatThrownBy(() -> Product.create(" ", "Coffee", 1, CREATED))
+            assertThatThrownBy(() -> Product.create(" ", "Coffee", 1))
                     .isInstanceOf(DomainValidationException.class)
                     .hasMessage("branchId is required");
         }
@@ -85,29 +77,11 @@ class ModelTest {
 
         @Test
         void branchTopProductCombinesBranchAndProduct() {
-            Branch branch = new Branch("b1", "f1", "Downtown", CREATED, CREATED);
-            Product product = new Product("p1", "b1", "Coffee", 42, CREATED, CREATED);
+            Branch branch = new Branch("b1", "f1", "Downtown");
+            Product product = new Product("p1", "b1", "Coffee", 42);
 
             assertThat(BranchTopProduct.of(branch, product))
                     .isEqualTo(new BranchTopProduct("b1", "Downtown", "p1", "Coffee", 42));
-        }
-
-        @Test
-        void overviewsAreDefensivelyCopied() {
-            Branch branch = new Branch("b1", "f1", "Downtown", CREATED, CREATED);
-            List<Product> products = new ArrayList<>();
-            BranchOverview branchOverview = new BranchOverview(branch, products);
-            List<BranchOverview> branches = new ArrayList<>(List.of(branchOverview));
-            FranchiseOverview overview =
-                    new FranchiseOverview(new Franchise("f1", "Acme", CREATED, CREATED), branches);
-
-            products.add(new Product("p1", "b1", "Coffee", 1, CREATED, CREATED));
-            branches.clear();
-
-            assertThat(branchOverview.products()).isEmpty();
-            assertThat(overview.branches()).containsExactly(branchOverview);
-            assertThatThrownBy(() -> overview.branches().clear())
-                    .isInstanceOf(UnsupportedOperationException.class);
         }
     }
 }

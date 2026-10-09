@@ -1,6 +1,5 @@
 package com.franquix.franchises.infrastructure.adapter.mongo.document;
 
-import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,9 +12,7 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 public record BranchDocument(
         @Id String id,
         @Field(targetType = FieldType.OBJECT_ID) String franchiseId,
-        String name,
-        Instant createdAt,
-        Instant updatedAt) {
+        String name) {
 
     public static final String COLLECTION = "branches";
 }

@@ -106,7 +106,7 @@ class FranquixApiE2EIT extends E2ESupport {
     }
 
     @Test
-    void renamesAllThreeLevelsAndReflectsThemInTheTree() {
+    void renamesAllThreeLevels() {
         String franchise = createFranchise(unique("Old"));
         String branch = addBranch(franchise, "Old branch");
         String product = addProduct(franchise, branch, "Old product", 1);
@@ -129,13 +129,12 @@ class FranquixApiE2EIT extends E2ESupport {
                 .exchange()
                 .expectStatus().isOk();
 
-        client.get().uri(BASE + "/{f}", franchise)
+        client.get().uri(BASE + "/{f}/branches/top-stock-products", franchise)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.name").isEqualTo(newFranchiseName)
-                .jsonPath("$.branches[0].name").isEqualTo("New branch")
-                .jsonPath("$.branches[0].products[0].name").isEqualTo("New product");
+                .jsonPath("$[0].branchName").isEqualTo("New branch")
+                .jsonPath("$[0].productName").isEqualTo("New product");
     }
 
     @Test
@@ -197,7 +196,7 @@ class FranquixApiE2EIT extends E2ESupport {
 
     @Test
     void requestsWithoutTheTokenAreRejected() {
-        http.get().uri(BASE + "/{f}", "6650f1c2a1b2c3d4e5f60718")
+        http.get().uri(BASE + "/{f}/branches/top-stock-products", "6650f1c2a1b2c3d4e5f60718")
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON);

@@ -7,13 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.franquix.franchises.domain.exception.DuplicateNameException;
 import com.franquix.franchises.domain.exception.NotFoundException;
-import com.franquix.franchises.domain.model.Branch;
-import com.franquix.franchises.domain.model.BranchOverview;
 import com.franquix.franchises.domain.model.BranchTopProduct;
 import com.franquix.franchises.domain.model.Franchise;
-import com.franquix.franchises.domain.model.FranchiseOverview;
-import com.franquix.franchises.domain.model.Product;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -22,11 +17,11 @@ import reactor.core.publisher.Mono;
 
 class FranchiseHandlerTest extends RestTestSupport {
 
-    private static final Franchise ACME = new Franchise(FRANCHISE_ID, "Acme", NOW, NOW);
+    private static final Franchise ACME = new Franchise(FRANCHISE_ID, "Acme");
 
     @Test
     void createReturns201WithLocationAndBody() {
-        when(createFranchise.create("Acme")).thenReturn(Mono.just(ACME));
+        when(franchises.create("Acme")).thenReturn(Mono.just(ACME));
 
         client.post().uri(BASE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -36,8 +31,7 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .expectHeader().valueMatches("Location", ".*/api/v1/franchises/" + FRANCHISE_ID)
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(FRANCHISE_ID)
-                .jsonPath("$.name").isEqualTo("Acme")
-                .jsonPath("$.createdAt").isEqualTo("2026-03-15T12:30:00Z");
+                .jsonPath("$.name").isEqualTo("Acme");
     }
 
     @Test
@@ -53,9 +47,8 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .jsonPath("$.status").isEqualTo(400)
                 .jsonPath("$.detail").isEqualTo("Request validation failed")
                 .jsonPath("$.errors.name").isEqualTo("must not be blank")
-                .jsonPath("$.instance").isEqualTo(BASE)
-                .jsonPath("$.timestamp").isEqualTo("2026-03-15T12:30:00Z");
-        verifyNoInteractions(createFranchise);
+                .jsonPath("$.instance").isEqualTo(BASE);
+        verifyNoInteractions(franchises);
     }
 
     @Test
@@ -90,7 +83,7 @@ class FranchiseHandlerTest extends RestTestSupport {
 
     @Test
     void createMapsDuplicateNamesTo409() {
-        when(createFranchise.create("Acme")).thenReturn(Mono.error(DuplicateNameException.franchise("Acme")));
+        when(franchises.create("Acme")).thenReturn(Mono.error(DuplicateNameException.franchise("Acme")));
 
         client.post().uri(BASE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -103,50 +96,9 @@ class FranchiseHandlerTest extends RestTestSupport {
     }
 
     @Test
-    void getReturnsTheWholeTree() {
-        Branch branch = new Branch(BRANCH_ID, FRANCHISE_ID, "Downtown", NOW, NOW);
-        Product product = new Product(PRODUCT_ID, BRANCH_ID, "Coffee", 7, NOW, NOW);
-        when(getFranchise.get(FRANCHISE_ID)).thenReturn(Mono.just(
-                new FranchiseOverview(ACME, List.of(new BranchOverview(branch, List.of(product))))));
-
-        client.get().uri(BASE + "/{id}", FRANCHISE_ID)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.name").isEqualTo("Acme")
-                .jsonPath("$.branches[0].name").isEqualTo("Downtown")
-                .jsonPath("$.branches[0].products[0].name").isEqualTo("Coffee")
-                .jsonPath("$.branches[0].products[0].stock").isEqualTo(7);
-    }
-
-    @Test
-    void getRejectsAMalformedId() {
-        client.get().uri(BASE + "/{id}", "not-an-id")
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.detail").isEqualTo("Invalid franchiseId 'not-an-id'")
-                .jsonPath("$.errors.franchiseId").exists();
-        verifyNoInteractions(getFranchise);
-    }
-
-    @Test
-    void getMapsMissingFranchisesTo404() {
-        when(getFranchise.get(FRANCHISE_ID)).thenReturn(Mono.error(NotFoundException.franchise(FRANCHISE_ID)));
-
-        client.get().uri(BASE + "/{id}", FRANCHISE_ID)
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectBody()
-                .jsonPath("$.title").isEqualTo("Not Found")
-                .jsonPath("$.detail").isEqualTo("Franchise '" + FRANCHISE_ID + "' not found")
-                .jsonPath("$.instance").isEqualTo(BASE + "/" + FRANCHISE_ID);
-    }
-
-    @Test
     void renameReturnsTheRenamedFranchise() {
-        when(renameFranchise.rename(FRANCHISE_ID, "Acme Global"))
-                .thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme Global", NOW, NOW)));
+        when(franchises.rename(FRANCHISE_ID, "Acme Global"))
+                .thenReturn(Mono.just(new Franchise(FRANCHISE_ID, "Acme Global")));
 
         client.patch().uri(BASE + "/{id}/name", FRANCHISE_ID)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -164,12 +116,12 @@ class FranchiseHandlerTest extends RestTestSupport {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody().jsonPath("$.errors.name").isEqualTo("must not be blank");
-        verifyNoInteractions(renameFranchise);
+        verifyNoInteractions(franchises);
     }
 
     @Test
     void topStockProductsReturnsOneEntryPerBranch() {
-        when(getTopStockProducts.getTopStockProducts(FRANCHISE_ID)).thenReturn(Flux.just(
+        when(franchises.getTopStockProducts(FRANCHISE_ID)).thenReturn(Flux.just(
                 new BranchTopProduct("b1", "Centro", "p9", "Coffee", 120),
                 new BranchTopProduct("b2", "Norte", "p4", "Tea", 85)));
 
@@ -188,7 +140,7 @@ class FranchiseHandlerTest extends RestTestSupport {
 
     @Test
     void topStockProductsReturnsAnEmptyArrayWhenNoBranchHasProducts() {
-        when(getTopStockProducts.getTopStockProducts(FRANCHISE_ID)).thenReturn(Flux.empty());
+        when(franchises.getTopStockProducts(FRANCHISE_ID)).thenReturn(Flux.empty());
 
         client.get().uri(BASE + "/{id}/branches/top-stock-products", FRANCHISE_ID)
                 .exchange()
@@ -198,7 +150,7 @@ class FranchiseHandlerTest extends RestTestSupport {
 
     @Test
     void topStockProductsMapsMissingFranchisesTo404() {
-        when(getTopStockProducts.getTopStockProducts(anyString()))
+        when(franchises.getTopStockProducts(anyString()))
                 .thenReturn(Flux.error(NotFoundException.franchise(FRANCHISE_ID)));
 
         client.get().uri(BASE + "/{id}/branches/top-stock-products", FRANCHISE_ID)

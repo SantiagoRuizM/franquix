@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
-class GetTopStockProductsServiceTest {
+class TopStockProductsTest {
 
     @Mock
     private FranchiseRepositoryPort franchises;
@@ -31,12 +31,11 @@ class GetTopStockProductsServiceTest {
     @Mock
     private ProductRepositoryPort products;
 
-    private GetTopStockProductsService useCase;
+    private FranchiseService useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new GetTopStockProductsService(
-                new HierarchyResolver(franchises, branches), branches, products);
+        useCase = new FranchiseService(franchises, branches, products);
     }
 
     @Test

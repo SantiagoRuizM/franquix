@@ -87,10 +87,6 @@ Content-Type: application/json
 
 { "name": "Acme Coffee Global" }
 
-### 2. Whole tree
-GET {{api}}/{{franchiseId}}
-Authorization: Bearer {{token}}
-
 ### 9. Delete product
 DELETE {{api}}/{{franchiseId}}/branches/{{centroId}}/products/{{coffeeId}}
 Authorization: Bearer {{token}}
@@ -110,7 +106,7 @@ Content-Type: application/json
 { "name": " ", "stock": -1 }
 
 ### Errors: 400 malformed id
-GET {{api}}/not-an-id
+GET {{api}}/not-an-id/branches/top-stock-products
 Authorization: Bearer {{token}}
 
 ### Health

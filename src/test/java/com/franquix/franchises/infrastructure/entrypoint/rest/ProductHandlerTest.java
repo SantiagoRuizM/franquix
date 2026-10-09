@@ -18,12 +18,12 @@ class ProductHandlerTest extends RestTestSupport {
     private static final String PRODUCT = PRODUCTS + "/{productId}";
 
     private static Product product(String name, int stock) {
-        return new Product(PRODUCT_ID, BRANCH_ID, name, stock, NOW, NOW);
+        return new Product(PRODUCT_ID, BRANCH_ID, name, stock);
     }
 
     @Test
     void addReturns201WithLocationAndBody() {
-        when(addProduct.add(FRANCHISE_ID, BRANCH_ID, "Coffee", 120)).thenReturn(Mono.just(product("Coffee", 120)));
+        when(products.add(FRANCHISE_ID, BRANCH_ID, "Coffee", 120)).thenReturn(Mono.just(product("Coffee", 120)));
 
         client.post().uri(PRODUCTS, FRANCHISE_ID, BRANCH_ID)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +51,7 @@ class ProductHandlerTest extends RestTestSupport {
                 .expectBody()
                 .jsonPath("$.errors.name").isEqualTo("must not be blank")
                 .jsonPath("$.errors.stock").isEqualTo("must be greater than or equal to 0");
-        verifyNoInteractions(addProduct);
+        verifyNoInteractions(products);
     }
 
     @Test
@@ -77,7 +77,7 @@ class ProductHandlerTest extends RestTestSupport {
 
     @Test
     void addMapsDuplicatesTo409() {
-        when(addProduct.add(FRANCHISE_ID, BRANCH_ID, "Coffee", 1))
+        when(products.add(FRANCHISE_ID, BRANCH_ID, "Coffee", 1))
                 .thenReturn(Mono.error(DuplicateNameException.product("Coffee")));
 
         client.post().uri(PRODUCTS, FRANCHISE_ID, BRANCH_ID)
@@ -89,7 +89,7 @@ class ProductHandlerTest extends RestTestSupport {
 
     @Test
     void deleteReturns204() {
-        when(deleteProduct.delete(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)).thenReturn(Mono.empty());
+        when(products.delete(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)).thenReturn(Mono.empty());
 
         client.delete().uri(PRODUCT, FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)
                 .exchange()
@@ -99,7 +99,7 @@ class ProductHandlerTest extends RestTestSupport {
 
     @Test
     void deleteMapsMissingProductsTo404() {
-        when(deleteProduct.delete(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID))
+        when(products.delete(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID))
                 .thenReturn(Mono.error(NotFoundException.product(BRANCH_ID, PRODUCT_ID)));
 
         client.delete().uri(PRODUCT, FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)
@@ -114,12 +114,12 @@ class ProductHandlerTest extends RestTestSupport {
         client.delete().uri(PRODUCT, FRANCHISE_ID, BRANCH_ID, "nope")
                 .exchange()
                 .expectStatus().isBadRequest();
-        verifyNoInteractions(deleteProduct);
+        verifyNoInteractions(products);
     }
 
     @Test
     void updateStockReturnsTheUpdatedProduct() {
-        when(updateStock.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 0)).thenReturn(Mono.just(product("Coffee", 0)));
+        when(products.updateStock(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, 0)).thenReturn(Mono.just(product("Coffee", 0)));
 
         client.patch().uri(PRODUCT + "/stock", FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -137,7 +137,7 @@ class ProductHandlerTest extends RestTestSupport {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody().jsonPath("$.errors.stock").exists();
-        verifyNoInteractions(updateStock);
+        verifyNoInteractions(products);
     }
 
     @Test
@@ -152,7 +152,7 @@ class ProductHandlerTest extends RestTestSupport {
 
     @Test
     void renameReturnsTheRenamedProduct() {
-        when(renameProduct.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
+        when(products.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
                 .thenReturn(Mono.just(product("Espresso", 3)));
 
         client.patch().uri(PRODUCT + "/name", FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)
@@ -165,7 +165,7 @@ class ProductHandlerTest extends RestTestSupport {
 
     @Test
     void renameMapsMissingProductsTo404() {
-        when(renameProduct.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
+        when(products.rename(FRANCHISE_ID, BRANCH_ID, PRODUCT_ID, "Espresso"))
                 .thenReturn(Mono.error(NotFoundException.product(BRANCH_ID, PRODUCT_ID)));
 
         client.patch().uri(PRODUCT + "/name", FRANCHISE_ID, BRANCH_ID, PRODUCT_ID)

@@ -10,8 +10,6 @@ import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocum
 import com.franquix.franchises.infrastructure.adapter.mongo.document.FranchiseDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.ProductDocument;
 import com.franquix.franchises.support.MongoTestcontainersConfiguration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +34,6 @@ import reactor.test.StepVerifier;
 class MongoRepositoryAdaptersIT {
 
     // MongoDB stores milliseconds; truncate so round-tripped values compare equal
-    private static final Instant NOW = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     private static final String MISSING_ID = new ObjectId().toHexString();
 
     @Autowired
@@ -57,15 +54,15 @@ class MongoRepositoryAdaptersIT {
     }
 
     private Franchise saveFranchise(String name) {
-        return franchises.create(Franchise.create(name, NOW)).block();
+        return franchises.create(Franchise.create(name)).block();
     }
 
     private Branch saveBranch(String franchiseId, String name) {
-        return branches.create(Branch.create(franchiseId, name, NOW)).block();
+        return branches.create(Branch.create(franchiseId, name)).block();
     }
 
     private Product saveProduct(String branchId, String name, int stock) {
-        return products.create(Product.create(branchId, name, stock, NOW)).block();
+        return products.create(Product.create(branchId, name, stock)).block();
     }
 
     @Test
@@ -92,19 +89,18 @@ class MongoRepositoryAdaptersIT {
         }
 
         @Test
-        void renameUpdatesOnlyTheNameAndTimestamp() {
+        void renameUpdatesOnlyTheName() {
             Franchise saved = saveFranchise("Acme");
-            Instant later = NOW.plusSeconds(60);
 
-            StepVerifier.create(franchises.rename(saved.id(), "Acme Global", later))
-                    .expectNext(new Franchise(saved.id(), "Acme Global", saved.createdAt(), later))
+            StepVerifier.create(franchises.rename(saved.id(), "Acme Global"))
+                    .expectNext(new Franchise(saved.id(), "Acme Global"))
                     .verifyComplete();
         }
 
         @Test
         void renameIsEmptyForAMissingFranchiseAndCreatesNothing() {
-            StepVerifier.create(franchises.rename(MISSING_ID, "Ghost", NOW)).verifyComplete();
-            StepVerifier.create(franchises.rename("bad", "Ghost", NOW)).verifyComplete();
+            StepVerifier.create(franchises.rename(MISSING_ID, "Ghost")).verifyComplete();
+            StepVerifier.create(franchises.rename("bad", "Ghost")).verifyComplete();
             StepVerifier.create(template.count(new Query(), FranchiseDocument.COLLECTION))
                     .expectNext(0L)
                     .verifyComplete();
@@ -115,7 +111,7 @@ class MongoRepositoryAdaptersIT {
             saveFranchise("Acme");
             Franchise other = saveFranchise("Other");
 
-            StepVerifier.create(franchises.rename(other.id(), "Acme", NOW))
+            StepVerifier.create(franchises.rename(other.id(), "Acme"))
                     .expectErrorMessage("A franchise named 'Acme' already exists")
                     .verify();
         }
@@ -124,7 +120,7 @@ class MongoRepositoryAdaptersIT {
         void rejectsADuplicateName() {
             saveFranchise("Acme");
 
-            StepVerifier.create(franchises.create(Franchise.create("Acme", NOW)))
+            StepVerifier.create(franchises.create(Franchise.create("Acme")))
                     .expectErrorMessage("A franchise named 'Acme' already exists")
                     .verify();
         }
@@ -133,7 +129,7 @@ class MongoRepositoryAdaptersIT {
         void renamingToTheCurrentNameIsNotADuplicate() {
             Franchise saved = saveFranchise("Acme");
 
-            StepVerifier.create(franchises.rename(saved.id(), "Acme", NOW))
+            StepVerifier.create(franchises.rename(saved.id(), "Acme"))
                     .expectNextCount(1)
                     .verifyComplete();
         }
@@ -190,10 +186,10 @@ class MongoRepositoryAdaptersIT {
             Franchise other = saveFranchise("Other");
             saveBranch(acme.id(), "Downtown");
 
-            StepVerifier.create(branches.create(Branch.create(other.id(), "Downtown", NOW)))
+            StepVerifier.create(branches.create(Branch.create(other.id(), "Downtown")))
                     .expectNextCount(1)
                     .verifyComplete();
-            StepVerifier.create(branches.create(Branch.create(acme.id(), "Downtown", NOW)))
+            StepVerifier.create(branches.create(Branch.create(acme.id(), "Downtown")))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -204,11 +200,11 @@ class MongoRepositoryAdaptersIT {
             Franchise other = saveFranchise("Other");
             Branch branch = saveBranch(acme.id(), "Downtown");
 
-            StepVerifier.create(branches.rename(branch.id(), other.id(), "Hijacked", NOW)).verifyComplete();
-            StepVerifier.create(branches.rename(branch.id(), acme.id(), "Uptown", NOW))
+            StepVerifier.create(branches.rename(branch.id(), other.id(), "Hijacked")).verifyComplete();
+            StepVerifier.create(branches.rename(branch.id(), acme.id(), "Uptown"))
                     .assertNext(renamed -> assertThat(renamed.name()).isEqualTo("Uptown"))
                     .verifyComplete();
-            StepVerifier.create(branches.rename("bad", acme.id(), "Uptown", NOW)).verifyComplete();
+            StepVerifier.create(branches.rename("bad", acme.id(), "Uptown")).verifyComplete();
         }
 
         @Test
@@ -217,7 +213,7 @@ class MongoRepositoryAdaptersIT {
             saveBranch(acme.id(), "Downtown");
             Branch uptown = saveBranch(acme.id(), "Uptown");
 
-            StepVerifier.create(branches.rename(uptown.id(), acme.id(), "Downtown", NOW))
+            StepVerifier.create(branches.rename(uptown.id(), acme.id(), "Downtown"))
                     .expectError(DuplicateNameException.class)
                     .verify();
         }
@@ -243,17 +239,6 @@ class MongoRepositoryAdaptersIT {
                     .verifyComplete();
             StepVerifier.create(products.findByIdAndBranchId(coffee.id(), otherBranch.id())).verifyComplete();
             StepVerifier.create(products.findByIdAndBranchId("bad", branch.id())).verifyComplete();
-        }
-
-        @Test
-        void findByBranchIdReturnsProductsSortedByName() {
-            saveProduct(branch.id(), "Tea", 1);
-            saveProduct(branch.id(), "Coffee", 2);
-
-            StepVerifier.create(products.findByBranchId(branch.id()).map(Product::name))
-                    .expectNext("Coffee", "Tea")
-                    .verifyComplete();
-            StepVerifier.create(products.findByBranchId("bad")).verifyComplete();
         }
 
         @Test
@@ -299,8 +284,8 @@ class MongoRepositoryAdaptersIT {
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
             products.deleteByIdAndBranchId(coffee.id(), branch.id()).block();
 
-            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 9, NOW)).verifyComplete();
-            StepVerifier.create(products.rename(coffee.id(), branch.id(), "Espresso", NOW)).verifyComplete();
+            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 9)).verifyComplete();
+            StepVerifier.create(products.rename(coffee.id(), branch.id(), "Espresso")).verifyComplete();
             StepVerifier.create(template.count(new Query(), ProductDocument.COLLECTION))
                     .expectNext(0L)
                     .verifyComplete();
@@ -311,8 +296,8 @@ class MongoRepositoryAdaptersIT {
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
 
             // each request carries only its own field, so applying them in any order keeps both changes
-            products.rename(coffee.id(), branch.id(), "Espresso", NOW).block();
-            products.updateStock(coffee.id(), branch.id(), 42, NOW).block();
+            products.rename(coffee.id(), branch.id(), "Espresso").block();
+            products.updateStock(coffee.id(), branch.id(), 42).block();
 
             StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id()))
                     .assertNext(found -> {
@@ -327,9 +312,9 @@ class MongoRepositoryAdaptersIT {
             Branch otherBranch = saveBranch(branch.franchiseId(), "Uptown");
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
 
-            StepVerifier.create(products.updateStock(coffee.id(), otherBranch.id(), 99, NOW)).verifyComplete();
-            StepVerifier.create(products.rename(coffee.id(), otherBranch.id(), "Hijacked", NOW)).verifyComplete();
-            StepVerifier.create(products.updateStock("bad", branch.id(), 1, NOW)).verifyComplete();
+            StepVerifier.create(products.updateStock(coffee.id(), otherBranch.id(), 99)).verifyComplete();
+            StepVerifier.create(products.rename(coffee.id(), otherBranch.id(), "Hijacked")).verifyComplete();
+            StepVerifier.create(products.updateStock("bad", branch.id(), 1)).verifyComplete();
             StepVerifier.create(products.findByIdAndBranchId(coffee.id(), branch.id()))
                     .expectNext(coffee)
                     .verifyComplete();
@@ -340,7 +325,7 @@ class MongoRepositoryAdaptersIT {
             saveProduct(branch.id(), "Coffee", 5);
             Product tea = saveProduct(branch.id(), "Tea", 1);
 
-            StepVerifier.create(products.rename(tea.id(), branch.id(), "Coffee", NOW))
+            StepVerifier.create(products.rename(tea.id(), branch.id(), "Coffee"))
                     .expectErrorMessage("A product named 'Coffee' already exists in this branch")
                     .verify();
         }
@@ -349,7 +334,7 @@ class MongoRepositoryAdaptersIT {
         void productNamesAreUniquePerBranch() {
             saveProduct(branch.id(), "Coffee", 5);
 
-            StepVerifier.create(products.create(Product.create(branch.id(), "Coffee", 1, NOW)))
+            StepVerifier.create(products.create(Product.create(branch.id(), "Coffee", 1)))
                     .expectErrorMessage("A product named 'Coffee' already exists in this branch")
                     .verify();
         }
@@ -357,10 +342,9 @@ class MongoRepositoryAdaptersIT {
         @Test
         void updateStockReturnsTheUpdatedProduct() {
             Product coffee = saveProduct(branch.id(), "Coffee", 5);
-            Instant later = NOW.plusSeconds(60);
 
-            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 42, later))
-                    .expectNext(new Product(coffee.id(), branch.id(), "Coffee", 42, coffee.createdAt(), later))
+            StepVerifier.create(products.updateStock(coffee.id(), branch.id(), 42))
+                    .expectNext(new Product(coffee.id(), branch.id(), "Coffee", 42))
                     .verifyComplete();
         }
     }

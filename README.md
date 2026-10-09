@@ -17,8 +17,8 @@ stores its data in MongoDB.
 
 ```mermaid
 flowchart LR
-    REST["infrastructure/entrypoint/rest<br/>Router · Handlers · DTOs · error handler"] --> IN["domain/port/in<br/>use case interfaces"]
-    UC["application/usecase<br/>use case services"] -. implements .-> IN
+    REST["infrastructure/entrypoint/rest<br/>Router · Handlers · DTOs · error handler"] --> IN["domain/port/in<br/>FranchiseUseCase · BranchUseCase · ProductUseCase"]
+    UC["application/usecase<br/>FranchiseService · BranchService · ProductService"] -. implements .-> IN
     UC --> MODEL["domain/model<br/>Franchise · Branch · Product"]
     UC --> OUT["domain/port/out<br/>repository ports"]
     MONGO["infrastructure/adapter/mongo<br/>documents · repositories · adapters"] -. implements .-> OUT
@@ -26,7 +26,7 @@ flowchart LR
 
 - **Domain:** immutable records and ports. It has no Spring or MongoDB imports, and an ArchUnit
   test enforces that.
-- **Application:** one service per use case.
+- **Application:** one service per aggregate (franchise, branch, product).
 - **Infrastructure:**
   - REST: Router Functions and Handlers.
   - MongoDB: the reactive adapter.
@@ -78,7 +78,6 @@ Base path: `/api/v1/franchises`. Every request needs `Authorization: Bearer <API
 | Method | Path | Body | Success |
 |---|---|---|---|
 | POST | `/franchises` | `{"name"}` | 201 |
-| GET | `/franchises/{franchiseId}` | – | 200 (whole tree) |
 | PATCH | `/franchises/{franchiseId}/name` | `{"name"}` | 200 |
 | POST | `/franchises/{franchiseId}/branches` | `{"name"}` | 201 |
 | PATCH | `/franchises/{franchiseId}/branches/{branchId}/name` | `{"name"}` | 200 |
@@ -117,7 +116,6 @@ curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE/stock -H "$AU
 curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE/name -H "$AUTH" -H "$JSON" -d '{"name":"Espresso"}'
 curl -s -X PATCH $API/$FRANCHISE/branches/$CENTRO/name -H "$AUTH" -H "$JSON" -d '{"name":"Downtown"}'
 curl -s -X PATCH $API/$FRANCHISE/name -H "$AUTH" -H "$JSON" -d '{"name":"Acme Coffee Global"}'
-curl -s $API/$FRANCHISE -H "$AUTH"                                    # whole tree
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $API/$FRANCHISE/branches/$CENTRO/products/$COFFEE -H "$AUTH"
 ```
 
@@ -126,7 +124,7 @@ Errors look like this:
 ```json
 { "type": "about:blank", "title": "Conflict", "status": 409,
   "detail": "A franchise named 'Acme Coffee Global' already exists",
-  "instance": "/api/v1/franchises", "timestamp": "2026-10-03T15:33:49.204Z" }
+  "instance": "/api/v1/franchises" }
 ```
 
 ## Tests
@@ -164,6 +162,15 @@ terraform destroy                               # remove everything
 
 [`render.yaml`](render.yaml) deploys the Docker image as a **free** web service.
 
+```mermaid
+flowchart LR
+    DEV["git push main"] --> CI["GitHub Actions<br/>build · tests · coverage · terraform validate"]
+    CI -- checks pass --> RENDER["Render web service<br/>Docker image, free plan"]
+    CLIENT["API client"] -- HTTPS --> RENDER
+    RENDER -- "MONGODB_URI (TLS)" --> ATLAS["MongoDB Atlas M0<br/>AWS us-east-1"]
+    TF["Terraform<br/>infra/envs/prod"] -. provisions .-> ATLAS
+```
+
 1. Push the repository to GitHub.
 2. In Render, go to **New → Blueprint** and select the repository.
 3. Paste the Atlas `MONGODB_URI` when asked. Render generates `API_TOKEN` on its own; you can
@@ -189,7 +196,7 @@ takes about a minute while the JVM starts.
 ```
 src/main/java/com/franquix/franchises
 ├── domain/            model, exceptions, port/in, port/out
-├── application/       use case services
+├── application/       FranchiseService, BranchService, ProductService
 └── infrastructure/    rest (router, handlers, dto, errors), adapter/mongo, config, security
 infra/                 Terraform for Atlas M0
 docs/                  MVP spec, requests.http

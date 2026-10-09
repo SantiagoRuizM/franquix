@@ -51,7 +51,6 @@ Franquix is a logistics backend that lets any brand run a franchise network:
 | Method | Path | Purpose | OK |
 |---|---|---|---|
 | POST | `/franchises` | Create franchise `{name}` | 201 |
-| GET | `/franchises/{franchiseId}` | Franchise with branches and products | 200 |
 | PATCH | `/franchises/{franchiseId}/name` | Rename franchise `{name}` | 200 |
 | POST | `/franchises/{franchiseId}/branches` | Add branch `{name}` | 201 |
 | PATCH | `/franchises/{franchiseId}/branches/{branchId}/name` | Rename branch `{name}` | 200 |

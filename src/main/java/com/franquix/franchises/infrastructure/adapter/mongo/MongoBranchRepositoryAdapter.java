@@ -6,7 +6,6 @@ import com.franquix.franchises.domain.port.out.BranchRepositoryPort;
 import com.franquix.franchises.infrastructure.adapter.mongo.document.BranchDocument;
 import com.franquix.franchises.infrastructure.adapter.mongo.mapper.MongoDocumentMapper;
 import com.franquix.franchises.infrastructure.adapter.mongo.repository.BranchMongoRepository;
-import java.time.Instant;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.stereotype.Component;
@@ -32,12 +31,12 @@ public class MongoBranchRepositoryAdapter implements BranchRepositoryPort {
     }
 
     @Override
-    public Mono<Branch> rename(String branchId, String franchiseId, String name, Instant updatedAt) {
+    public Mono<Branch> rename(String branchId, String franchiseId, String name) {
         if (!ObjectIds.allValid(branchId, franchiseId)) {
             return Mono.empty();
         }
         return template.findAndModify(AtomicUpdates.byIdAndParent(branchId, "franchiseId", franchiseId),
-                        AtomicUpdates.rename(name, updatedAt), AtomicUpdates.RETURN_NEW_NO_UPSERT, BranchDocument.class)
+                        AtomicUpdates.rename(name), AtomicUpdates.RETURN_NEW_NO_UPSERT, BranchDocument.class)
                 .map(MongoDocumentMapper::toDomain)
                 .onErrorMap(DuplicateKeyException.class, error -> DuplicateNameException.branch(name));
     }

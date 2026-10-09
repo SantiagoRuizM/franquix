@@ -2,7 +2,6 @@ package com.franquix.franchises.infrastructure.entrypoint.rest.router;
 
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.BranchResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.CreateProductRequest;
-import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseDetailResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.FranchiseResponse;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.NameRequest;
 import com.franquix.franchises.infrastructure.entrypoint.rest.dto.ProductResponse;
@@ -56,16 +55,6 @@ public class FranchiseRouter {
                                             content = @Content(schema = @Schema(implementation = FranchiseResponse.class))),
                                     @ApiResponse(responseCode = "400", ref = "BadRequest"),
                                     @ApiResponse(responseCode = "409", ref = "Conflict")})),
-            @RouterOperation(path = BASE_PATH + FRANCHISE, method = RequestMethod.GET,
-                    beanClass = FranchiseHandler.class, beanMethod = "get",
-                    operation = @Operation(operationId = "getFranchise", tags = "Franchises",
-                            summary = "Get a franchise with all its branches and products",
-                            parameters = @Parameter(in = ParameterIn.PATH, name = "franchiseId", required = true),
-                            responses = {
-                                    @ApiResponse(responseCode = "200", description = "Franchise tree",
-                                            content = @Content(schema = @Schema(implementation = FranchiseDetailResponse.class))),
-                                    @ApiResponse(responseCode = "400", ref = "BadRequest"),
-                                    @ApiResponse(responseCode = "404", ref = "NotFound")})),
             @RouterOperation(path = BASE_PATH + FRANCHISE + "/name", method = RequestMethod.PATCH,
                     beanClass = FranchiseHandler.class, beanMethod = "rename",
                     operation = @Operation(operationId = "renameFranchise", tags = "Franchises",
@@ -184,7 +173,6 @@ public class FranchiseRouter {
         return RouterFunctions.route()
                 .path(BASE_PATH, api -> api
                         .POST("", franchises::create)
-                        .GET(FRANCHISE, franchises::get)
                         .PATCH(FRANCHISE + "/name", franchises::rename)
                         .GET(BRANCHES + "/top-stock-products", franchises::topStockProducts)
                         .POST(BRANCHES, branches::add)
