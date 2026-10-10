@@ -1,3 +1,5 @@
+![Franquix](docs/logotipo.png)
+
 # Franquix — Franchiser as a Service
 
 Reactive REST API for franchise networks: **franchises → branches → products with stock**.
@@ -155,6 +157,20 @@ Errors look like this:
   "instance": "/api/v1/franchises" }
 ```
 
+### Sample data
+
+[`scripts/seed.sh`](scripts/seed.sh) loads three franchises with branches and products through the
+API and then prints the top-stock product of each branch. The data includes a stock tie and a
+branch without products. It needs bash, `curl` and `jq`.
+
+```bash
+./scripts/seed.sh                                                          # local stack
+API_URL=https://franquix-api.onrender.com API_TOKEN=<token> ./scripts/seed.sh   # Render
+```
+
+You can run it more than once: if a franchise name already exists, the script skips that
+franchise.
+
 ## Tests
 
 ```bash
@@ -224,5 +240,6 @@ src/main/java/com/franquix/franchises
 └── infrastructure/    rest (router, handlers, dto, errors), adapter/mongo, config, security
 infra/                 Terraform for Atlas M0
 docs/                  MVP spec, requests.http, diagrams/ (PNGs + the script that draws them)
+scripts/seed.sh        sample data loaded through the API
 Dockerfile, docker-compose.yml, render.yaml, .github/workflows/ci.yml
 ```
