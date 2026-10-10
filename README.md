@@ -13,6 +13,40 @@ stores its data in MongoDB.
 - The repo also includes a Docker image, docker-compose, Terraform for MongoDB Atlas M0, a
   Render deployment and GitHub Actions CI.
 
+## Requirements checklist
+
+### Acceptance criteria
+
+- [x] 1. Built with Spring Boot (3.5, WebFlux).
+- [x] 2. Endpoint to add a new franchise: `POST /franchises`.
+- [x] 3. Endpoint to add a new branch to a franchise: `POST /franchises/{franchiseId}/branches`.
+- [x] 4. Endpoint to add a new product to a branch: `POST .../branches/{branchId}/products`.
+- [x] 5. Endpoint to delete a product from a branch: `DELETE .../products/{productId}`.
+- [x] 6. Endpoint to update a product's stock: `PATCH .../products/{productId}/stock`.
+- [x] 7. Endpoint that returns the product with the most stock in each branch of a franchise, with
+  the branch it belongs to: `GET /franchises/{franchiseId}/branches/top-stock-products`.
+- [x] 8. Persistence in a cloud data store: MongoDB Atlas.
+
+### Extras
+
+- [x] The application is packaged with Docker: multi-stage [`Dockerfile`](Dockerfile) and
+  [`docker-compose.yml`](docker-compose.yml).
+- [x] Functional and reactive programming: WebFlux Router Functions + Handlers, `Mono`/`Flux` end
+  to end.
+- [x] Endpoint to rename a franchise: `PATCH /franchises/{franchiseId}/name`.
+- [x] Endpoint to rename a branch: `PATCH .../branches/{branchId}/name`.
+- [x] Endpoint to rename a product: `PATCH .../products/{productId}/name`.
+- [x] Persistence provisioned with infrastructure as code: Terraform in [`infra/`](infra/README.md)
+  (Atlas M0 cluster, database user, IP access list).
+- [ ] The whole solution is deployed to the cloud: Render blueprint in [`render.yaml`](render.yaml),
+  public URL pending.
+
+### Delivery notes
+
+- [x] Git workflow: one branch per phase, Conventional Commits, `--no-ff` merges into `main`.
+- [x] Public repository: https://github.com/SantiagoRuizM/franquix
+- [x] Documentation to run the application locally: [Run locally](#run-locally).
+
 ## Architecture
 
 ```mermaid
