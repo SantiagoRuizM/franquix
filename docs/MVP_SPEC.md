@@ -75,6 +75,6 @@ Franquix is a logistics backend that lets any brand run a franchise network:
 ## Delivery rules
 
 - Git: one branch per phase (`chore/*`, `feat/*`, `test/*`, `build/*`, `infra/*`, `ci/*`, `docs/*`),
-  Conventional Commits, merged into `main` with `--no-ff`, final tag `v1.0.0`.
+  Conventional Commits, merged into `main` with `--no-ff`, final tag `v1.1.0`.
 - `./gradlew build` must pass after every phase.
 - No secrets in the repository; `MONGODB_URI` is always provided through the environment.

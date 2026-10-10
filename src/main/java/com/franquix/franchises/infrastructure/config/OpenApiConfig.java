@@ -26,7 +26,7 @@ public class OpenApiConfig {
     private static final String PROBLEM_JSON = org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE;
 
     @Bean
-    OpenAPI franquixOpenApi(@Value("${info.app.version:1.0.0}") String version) {
+    OpenAPI franquixOpenApi(@Value("${info.app.version:1.1.0}") String version) {
         Components components = new Components()
                 .addSecuritySchemes(BEARER, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)

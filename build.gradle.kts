@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.franquix"
-version = "1.0.0"
+version = "1.1.0"
 description = "Franquix - Franchiser as a Service: reactive franchise management API"
 
 java {
