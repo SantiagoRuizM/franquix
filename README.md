@@ -49,14 +49,7 @@ stores its data in MongoDB.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    REST["infrastructure/entrypoint/rest<br/>Router · Handlers · DTOs · error handler"] --> IN["domain/port/in<br/>FranchiseUseCase · BranchUseCase · ProductUseCase"]
-    UC["application/usecase<br/>FranchiseService · BranchService · ProductService"] -. implements .-> IN
-    UC --> MODEL["domain/model<br/>Franchise · Branch · Product"]
-    UC --> OUT["domain/port/out<br/>repository ports"]
-    MONGO["infrastructure/adapter/mongo<br/>documents · repositories · adapters"] -. implements .-> OUT
-```
+![Hexagonal architecture: REST entrypoint, use-case ports, services, domain model, repository ports and the MongoDB adapter](docs/diagrams/franquix-hexagonal.png)
 
 - **Domain:** immutable records and ports. It has no Spring or MongoDB imports, and an ArchUnit
   test enforces that.
@@ -196,14 +189,7 @@ terraform destroy                               # remove everything
 
 [`render.yaml`](render.yaml) deploys the Docker image as a **free** web service.
 
-```mermaid
-flowchart LR
-    DEV["git push main"] --> CI["GitHub Actions<br/>build · tests · coverage · terraform validate"]
-    CI -- checks pass --> RENDER["Render web service<br/>Docker image, free plan"]
-    CLIENT["API client"] -- HTTPS --> RENDER
-    RENDER -- "MONGODB_URI (TLS)" --> ATLAS["MongoDB Atlas M0<br/>AWS us-east-1"]
-    TF["Terraform<br/>infra/envs/prod"] -. provisions .-> ATLAS
-```
+![Deployment: GitHub Actions CI, the Render web service, MongoDB Atlas M0 on AWS us-east-1 and Terraform](docs/diagrams/franquix-deployment.png)
 
 1. Push the repository to GitHub.
 2. In Render, go to **New → Blueprint** and select the repository.
@@ -233,6 +219,6 @@ src/main/java/com/franquix/franchises
 ├── application/       FranchiseService, BranchService, ProductService
 └── infrastructure/    rest (router, handlers, dto, errors), adapter/mongo, config, security
 infra/                 Terraform for Atlas M0
-docs/                  MVP spec, requests.http
+docs/                  MVP spec, requests.http, diagrams/ (PNGs + the script that draws them)
 Dockerfile, docker-compose.yml, render.yaml, .github/workflows/ci.yml
 ```
