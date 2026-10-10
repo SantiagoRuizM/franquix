@@ -1,3 +1,5 @@
+![Franquix](docs/logotipo.png)
+
 # Franquix — Franchiser as a Service
 
 Reactive REST API for franchise networks: **franchises → branches → products with stock**.
