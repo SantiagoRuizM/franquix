@@ -38,8 +38,9 @@ stores its data in MongoDB.
 - [x] Endpoint to rename a product: `PATCH .../products/{productId}/name`.
 - [x] Persistence provisioned with infrastructure as code: Terraform in [`infra/`](infra/README.md)
   (Atlas M0 cluster, database user, IP access list).
-- [ ] The whole solution is deployed to the cloud: Render blueprint in [`render.yaml`](render.yaml),
-  public URL pending.
+- [x] The whole solution is deployed to the cloud: the API runs on Render
+  ([`render.yaml`](render.yaml)) at https://franquix-api.onrender.com and stores its data in
+  MongoDB Atlas.
 
 ### Delivery notes
 
@@ -201,7 +202,10 @@ terraform destroy                               # remove everything
 On the free plan the service sleeps after 15 minutes without traffic. The first request after that
 takes about a minute while the JVM starts.
 
-**Public URL:** `https://franquix-api.onrender.com` (*fill in after the first deploy*)
+**Public URL:** https://franquix-api.onrender.com
+([health](https://franquix-api.onrender.com/actuator/health),
+[Swagger UI](https://franquix-api.onrender.com/swagger-ui.html)). The API needs the `API_TOKEN`
+from the Render dashboard.
 
 ## CI/CD
 
